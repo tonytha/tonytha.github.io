@@ -13,9 +13,9 @@
       <span class="ai-badge">AI-generated · directional</span>
     </div>
     <p class="subtitle">
-      Estimate monthly Pay-As-You-Go (PAYG) cost for Purview AI capabilities by entering your monthly
-      AI interaction volume per zone. Knobs mirror the Purview admin controls customers actually configure.
-      Inspired by the
+      Estimate monthly Pay-As-You-Go (PAYG) cost for Purview AI capabilities the way customers actually
+      set them up — pick a <strong>user size</strong> and a <strong>usage intensity</strong> per AI workload,
+      then choose which Purview capabilities are in scope. Inspired by the
       <a href="https://refactored-enigma-l1ygz9q.pages.github.io" target="_blank" rel="noopener">reference calculator</a>;
       rates are illustrative — confirm against the official Microsoft pricing page.
     </p>
@@ -50,21 +50,21 @@
     <section class="card" aria-labelledby="zones-h">
       <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:8px;">
         <div>
-          <h2 id="zones-h" style="margin:0">2 · AI interaction volume per zone</h2>
+          <h2 id="zones-h" style="margin:0">2 · Workloads &amp; estimated usage</h2>
           <p class="muted hint" style="margin:4px 0 0 0">
-            Estimate monthly AI interactions in each zone. Activity profile (basic/heavy) is implicit
-            from message volume — no separate intensity selector needed.
+            Customers configure Purview policies <em>per AI workload</em>. For each workload below, pick the
+            user size and usage intensity — monthly message volume is derived from <code>users × intensity</code>.
           </p>
         </div>
         <label class="field" style="min-width:220px">
           <span>Focus</span>
           <select id="focus">
-            <option value="all" selected>All zones</option>
-            <option value="z1">Z1B — Microsoft Copilots only</option>
-            <option value="z2">Z2 — Foundry / Custom Agents only</option>
-            <option value="z3">Z3 — 3rd-Party AI sites only</option>
+            <option value="all" selected>All workloads</option>
+            <option value="z1">Microsoft Copilots only</option>
+            <option value="z2">Custom Agents only</option>
+            <option value="z3">3rd-Party AI only</option>
           </select>
-          <p class="hint">Filters which zones contribute to cost.</p>
+          <p class="hint">Filters which workloads contribute to cost.</p>
         </label>
       </div>
 
@@ -78,30 +78,50 @@
             <h3>Microsoft Copilots <span class="zone-card-tag">(1st Party)</span></h3>
           </header>
           <div class="zone-card-body">
-            <!-- Z1A nested -->
+            <!-- Z1A nested: free banner only (no input) -->
             <div class="zone" data-zone="z1a">
-              <div class="zone-label">Zone 1A · Microsoft 365 Copilot</div>
               <div class="zone-block zone-block--free">
                 <div class="zone-block-head">
-                  <span class="zone-block-title">Microsoft 365 Copilot license area</span>
+                  <span class="zone-block-title">M365 Copilot (Word, Excel, Teams…)</span>
                   <span class="pill pill-free">Free / Included</span>
                 </div>
                 <p class="zone-block-hint">
-                  Word, Excel, PowerPoint, Outlook, Teams Copilot. Bundled in M365 Copilot SKU —
-                  does not add to PAYG. Reference only.
+                  Bundled with the M365 Copilot SKU — does not add to PAYG. Sized below is the
+                  <strong>billable</strong> Microsoft Copilot family (Fabric, Security, Sales, Service, Studio).
                 </p>
               </div>
             </div>
-            <!-- Z1B nested -->
+            <!-- Z1B nested: workload sizing -->
             <div class="zone" data-zone="z1b">
-              <div class="zone-label">Zone 1B · Microsoft Copilots</div>
               <p class="zone-sub">
-                Fabric, Security, Sales, Service, Studio Copilots. Billed for CC + DLM if in scope.
+                Billable Microsoft Copilots — Fabric, Security, Sales, Service, Studio.
+                Charged for CC + DLM when in scope.
               </p>
-              <label class="field">
-                <span>Monthly AI interactions</span>
-                <input type="number" id="z1b-msgs" min="0" value="10000" />
-              </label>
+              <div class="workload-input">
+                <div class="wl-row">
+                  <span class="wl-row-label">Users</span>
+                  <div class="chip-row" data-target="z1b-users" data-workload="z1b">
+                    <button type="button" class="chip" data-val="100">Small <em>100</em></button>
+                    <button type="button" class="chip active" data-val="1000">Medium <em>1K</em></button>
+                    <button type="button" class="chip" data-val="10000">Large <em>10K</em></button>
+                    <button type="button" class="chip" data-val="50000">XL <em>50K</em></button>
+                  </div>
+                </div>
+                <div class="wl-row">
+                  <span class="wl-row-label">Intensity</span>
+                  <div class="chip-row" data-target="z1b-intensity" data-workload="z1b">
+                    <button type="button" class="chip" data-val="10">Low <em>10/user</em></button>
+                    <button type="button" class="chip active" data-val="100">Medium <em>100/user</em></button>
+                    <button type="button" class="chip" data-val="500">Heavy <em>500/user</em></button>
+                  </div>
+                </div>
+                <input type="hidden" id="z1b-users" value="1000" />
+                <input type="hidden" id="z1b-intensity" value="100" />
+                <input type="hidden" id="z1b-msgs" value="100000" />
+                <p class="workload-derived">
+                  ≈ <span class="workload-derived-num" id="z1b-msgs-display">100,000</span> messages / month
+                </p>
+              </div>
               <div class="pill-row">
                 <span class="pill pill-needed">Needed: CC · DLM</span>
               </div>
@@ -119,14 +139,35 @@
           </header>
           <div class="zone-card-body">
             <div class="zone" data-zone="z2">
-              <div class="zone-label">Zone 2 · Microsoft Foundry / Custom Agents</div>
               <p class="zone-sub">
-                Custom agents built via Foundry, Copilot Studio, etc. Billed for CC + DLM if in scope.
+                Custom agents built via Microsoft Foundry, Copilot Studio, etc.
+                Charged for CC + DLM when in scope.
               </p>
-              <label class="field">
-                <span>Monthly AI interactions</span>
-                <input type="number" id="z2-msgs" min="0" value="50000" />
-              </label>
+              <div class="workload-input">
+                <div class="wl-row">
+                  <span class="wl-row-label">Users</span>
+                  <div class="chip-row" data-target="z2-users" data-workload="z2">
+                    <button type="button" class="chip" data-val="100">Small <em>100</em></button>
+                    <button type="button" class="chip active" data-val="1000">Medium <em>1K</em></button>
+                    <button type="button" class="chip" data-val="10000">Large <em>10K</em></button>
+                    <button type="button" class="chip" data-val="50000">XL <em>50K</em></button>
+                  </div>
+                </div>
+                <div class="wl-row">
+                  <span class="wl-row-label">Intensity</span>
+                  <div class="chip-row" data-target="z2-intensity" data-workload="z2">
+                    <button type="button" class="chip" data-val="10">Low <em>10/user</em></button>
+                    <button type="button" class="chip active" data-val="100">Medium <em>100/user</em></button>
+                    <button type="button" class="chip" data-val="500">Heavy <em>500/user</em></button>
+                  </div>
+                </div>
+                <input type="hidden" id="z2-users" value="1000" />
+                <input type="hidden" id="z2-intensity" value="100" />
+                <input type="hidden" id="z2-msgs" value="100000" />
+                <p class="workload-derived">
+                  ≈ <span class="workload-derived-num" id="z2-msgs-display">100,000</span> messages / month
+                </p>
+              </div>
               <div class="pill-row">
                 <span class="pill pill-needed">Needed: CC · DLM</span>
               </div>
@@ -144,14 +185,35 @@
           </header>
           <div class="zone-card-body">
             <div class="zone" data-zone="z3">
-              <div class="zone-label">Zone 3 · ChatGPT, Claude, Gemini, shadow AI &amp; other AI sites</div>
               <p class="zone-sub">
-                Accessed via Edge. Adds CP + Audit on top of CC/DLM.
+                ChatGPT, Claude, Gemini, shadow AI &amp; other AI sites accessed via Edge.
+                Adds CP + Audit on top of CC/DLM.
               </p>
-              <label class="field">
-                <span>Monthly AI interactions</span>
-                <input type="number" id="z3-msgs" min="0" value="25000" />
-              </label>
+              <div class="workload-input">
+                <div class="wl-row">
+                  <span class="wl-row-label">Users</span>
+                  <div class="chip-row" data-target="z3-users" data-workload="z3">
+                    <button type="button" class="chip" data-val="100">Small <em>100</em></button>
+                    <button type="button" class="chip active" data-val="1000">Medium <em>1K</em></button>
+                    <button type="button" class="chip" data-val="10000">Large <em>10K</em></button>
+                    <button type="button" class="chip" data-val="50000">XL <em>50K</em></button>
+                  </div>
+                </div>
+                <div class="wl-row">
+                  <span class="wl-row-label">Intensity</span>
+                  <div class="chip-row" data-target="z3-intensity" data-workload="z3">
+                    <button type="button" class="chip" data-val="10">Low <em>10/user</em></button>
+                    <button type="button" class="chip active" data-val="100">Medium <em>100/user</em></button>
+                    <button type="button" class="chip" data-val="500">Heavy <em>500/user</em></button>
+                  </div>
+                </div>
+                <input type="hidden" id="z3-users" value="1000" />
+                <input type="hidden" id="z3-intensity" value="100" />
+                <input type="hidden" id="z3-msgs" value="100000" />
+                <p class="workload-derived">
+                  ≈ <span class="workload-derived-num" id="z3-msgs-display">100,000</span> messages / month
+                </p>
+              </div>
               <div class="pill-row">
                 <span class="pill pill-needed">Needed: CC · DLM · CP · Audit</span>
               </div>
@@ -165,8 +227,8 @@
     <section class="card" aria-labelledby="cap-h">
       <h2 id="cap-h">3 · Purview capabilities</h2>
       <p class="muted hint" style="margin-top:-4px">
-        Knobs mirror what an admin configures in the Purview portal — not low-level metering inputs
-        like SIT counts or character limits.
+        Configured globally and applied across the workloads above. Knobs mirror what an admin
+        configures in the Purview portal — not low-level metering inputs like SIT counts or character limits.
       </p>
 
       <!-- COMMUNICATION COMPLIANCE -->
@@ -187,13 +249,13 @@
               <p class="hint">% of in-scope messages sampled by CC policy.</p>
             </label>
             <div class="field">
-              <span>Zones in scope</span>
+              <span>Workloads in scope</span>
               <div class="checkbox-grid">
-                <label><input type="checkbox" class="cc-scope" value="z1b" checked /> Z1B</label>
-                <label><input type="checkbox" class="cc-scope" value="z2" checked /> Z2</label>
-                <label><input type="checkbox" class="cc-scope" value="z3" checked /> Z3</label>
+                <label><input type="checkbox" class="cc-scope" value="z1b" checked /> Microsoft Copilots</label>
+                <label><input type="checkbox" class="cc-scope" value="z2" checked /> Custom Agents</label>
+                <label><input type="checkbox" class="cc-scope" value="z3" checked /> 3rd-Party AI</label>
               </div>
-              <p class="hint">CC scopes which zones it inspects.</p>
+              <p class="hint">CC scopes which workloads it inspects.</p>
             </div>
           </div>
           <p class="meter-line" id="cc-meter">—</p>
@@ -218,11 +280,11 @@
               <p class="hint">Volume × years drives DLM PAYG.</p>
             </label>
             <div class="field">
-              <span>Zones in scope</span>
+              <span>Workloads in scope</span>
               <div class="checkbox-grid">
-                <label><input type="checkbox" class="dlm-scope" value="z1b" checked /> Z1B</label>
-                <label><input type="checkbox" class="dlm-scope" value="z2" checked /> Z2</label>
-                <label><input type="checkbox" class="dlm-scope" value="z3" checked /> Z3</label>
+                <label><input type="checkbox" class="dlm-scope" value="z1b" checked /> Microsoft Copilots</label>
+                <label><input type="checkbox" class="dlm-scope" value="z2" checked /> Custom Agents</label>
+                <label><input type="checkbox" class="dlm-scope" value="z3" checked /> 3rd-Party AI</label>
               </div>
             </div>
           </div>
@@ -233,7 +295,7 @@
       <!-- COLLECTION POLICIES -->
       <div class="cap" id="cap-cp">
         <div class="cap-head">
-          <h3>Collection Policies <span class="muted">(Z3 only)</span></h3>
+          <h3>Collection Policies <span class="muted">(3rd-Party AI only)</span></h3>
           <div class="cap-controls">
             <label><input type="radio" name="cp-mode" value="off" /> Off</label>
             <label><input type="radio" name="cp-mode" value="on" checked /> On</label>

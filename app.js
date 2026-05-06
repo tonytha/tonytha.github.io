@@ -206,6 +206,35 @@ function recompute() {
 }
 
 /* ---------------- wiring ---------------- */
+function wireWorkloads() {
+  const updateWorkload = (workload) => {
+    const users = num(`#${workload}-users`);
+    const intensity = num(`#${workload}-intensity`);
+    const msgs = users * intensity;
+    const hidden = $(`#${workload}-msgs`);
+    if (hidden) {
+      hidden.value = msgs;
+    }
+    const display = $(`#${workload}-msgs-display`);
+    if (display) display.textContent = msgs.toLocaleString('en-US');
+  };
+  $$('.chip-row').forEach(row => {
+    const target = row.getAttribute('data-target');
+    const workload = row.getAttribute('data-workload');
+    row.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        row.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const targetEl = $(`#${target}`);
+        if (targetEl) targetEl.value = chip.getAttribute('data-val');
+        if (workload) updateWorkload(workload);
+        recompute();
+      });
+    });
+  });
+  ['z1b', 'z2', 'z3'].forEach(updateWorkload);
+}
+
 function wire() {
   const inputs = $$('input, select');
   inputs.forEach(el => {
@@ -219,6 +248,7 @@ function wire() {
     else d.removeAttribute('hidden');
     $('#reveal-btn').textContent = open ? 'Show derivations' : 'Hide derivations';
   });
+  wireWorkloads();
   recompute();
 }
 
