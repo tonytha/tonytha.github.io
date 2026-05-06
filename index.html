@@ -3,40 +3,339 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>tonytha.github.io — dummy page</title>
-  <style>
-    :root { color-scheme: light dark; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-      max-width: 720px;
-      margin: 4rem auto;
-      padding: 0 1.25rem;
-      line-height: 1.55;
-    }
-    .ai-banner {
-      background: #fff7d6;
-      border: 1px solid #e0c97a;
-      color: #5a4500;
-      padding: 0.5rem 0.75rem;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      margin-bottom: 1.5rem;
-    }
-    @media (prefers-color-scheme: dark) {
-      .ai-banner { background: #3a3010; border-color: #7a6320; color: #f0d97a; }
-    }
-    h1 { margin-top: 0; }
-    code { background: rgba(127,127,127,0.15); padding: 0 0.3em; border-radius: 3px; }
-    .meta { color: #777; font-size: 0.85rem; margin-top: 2rem; }
-  </style>
+  <title>Microsoft Purview AI — PAYG Calculator</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="ai-banner">⚙️ AI-generated dummy page — created by Copilot CLI to validate GitHub Pages deployment.</div>
+  <header class="page-header">
+    <div class="title-row">
+      <h1>Microsoft Purview AI <span class="muted">— PAYG Calculator</span></h1>
+      <span class="ai-badge" title="AI-generated artifact">AI&nbsp;generated</span>
+    </div>
+    <p class="subtitle">
+      Customer-facing reframe of the engineering PAYG calculator.
+      Knobs mirror what tenant admins actually configure in Purview, not internal meters.
+      Volume drives billing — see <a href="#methodology">methodology</a>.
+    </p>
+  </header>
 
-  <h1>Hello from <code>tonytha.github.io</code></h1>
-  <p>If you can read this, the GitHub Pages deployment pipeline is working.</p>
-  <p>This is a placeholder. The Microsoft Purview AI PAYG calculator will replace this page once deployment is verified.</p>
+  <main>
+    <!-- ============== TENANT BASELINE ============== -->
+    <section class="card">
+      <h2>1. Tenant baseline</h2>
+      <div class="grid-2">
+        <label class="field">
+          <span>License</span>
+          <select id="license">
+            <option value="E3">Microsoft 365 E3</option>
+            <option value="E5" selected>Microsoft 365 E5</option>
+          </select>
+          <small class="hint">E5 unlocks Premium tiers (CC Premium, Audit Premium, IRM Premium, etc.). Endpoint DLP is included with E5.</small>
+        </label>
+        <label class="field">
+          <span>Total monitored seats (org-wide)</span>
+          <input id="seats" type="number" min="1" value="1000" />
+          <small class="hint">Used to bound per-zone user counts and as a sanity check.</small>
+        </label>
+      </div>
+    </section>
 
-  <p class="meta">Owner: <code>tonytha</code> · Source: <code>main</code> branch, root</p>
+    <!-- ============== ACTIVITY ZONES ============== -->
+    <section class="card">
+      <h2>2. Activity zones <span class="muted">(per Purview activity model)</span></h2>
+      <p class="hint">
+        Volume is derived from <em>users in zone × messages per user per month</em>.
+        Activity profile is implicit from this, not an extra knob.
+      </p>
+      <div class="zone-grid">
+        <div class="zone" data-zone="z1a">
+          <div class="zone-head">
+            <h3>Z1A — Low-risk reference</h3>
+            <span class="pill pill-free">Free with subscription</span>
+          </div>
+          <p class="hint">Telemetry baseline; not billed. Shown for completeness.</p>
+        </div>
+
+        <div class="zone" data-zone="z1b">
+          <div class="zone-head">
+            <h3>Z1B — Low activity</h3>
+            <span class="pill pill-z">Z1B</span>
+          </div>
+          <div class="grid-2">
+            <label class="field">
+              <span>Users in zone</span>
+              <input class="users" type="number" min="0" value="50" />
+            </label>
+            <label class="field">
+              <span>Messages / user / month</span>
+              <input class="mpu" type="number" min="0" value="200" />
+            </label>
+          </div>
+          <div class="derived"><span>Estimated volume:</span> <output class="vol">10,000</output> msgs/mo</div>
+        </div>
+
+        <div class="zone" data-zone="z2">
+          <div class="zone-head">
+            <h3>Z2 — Mid activity</h3>
+            <span class="pill pill-z">Z2</span>
+          </div>
+          <div class="grid-2">
+            <label class="field">
+              <span>Users in zone</span>
+              <input class="users" type="number" min="0" value="100" />
+            </label>
+            <label class="field">
+              <span>Messages / user / month</span>
+              <input class="mpu" type="number" min="0" value="500" />
+            </label>
+          </div>
+          <div class="derived"><span>Estimated volume:</span> <output class="vol">50,000</output> msgs/mo</div>
+        </div>
+
+        <div class="zone" data-zone="z3">
+          <div class="zone-head">
+            <h3>Z3 — High activity (frontline / regulated)</h3>
+            <span class="pill pill-z3">Z3 (billable for most meters)</span>
+          </div>
+          <div class="grid-2">
+            <label class="field">
+              <span>Users in zone</span>
+              <input class="users" type="number" min="0" value="500" />
+            </label>
+            <label class="field">
+              <span>Messages / user / month</span>
+              <input class="mpu" type="number" min="0" value="50" />
+            </label>
+          </div>
+          <div class="derived"><span>Estimated volume:</span> <output class="vol">25,000</output> msgs/mo</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== CAPABILITY KNOBS ============== -->
+    <section class="card">
+      <h2>3. Capabilities — admin controls only</h2>
+      <p class="hint">Each row exposes the same controls a Purview admin sees. SITs / labels / indicators do <strong>not</strong> change billing and are intentionally hidden.</p>
+
+      <!-- Communications Compliance -->
+      <div class="cap" id="cap-cc">
+        <div class="cap-head">
+          <h3>Communications Compliance</h3>
+          <div class="cap-controls">
+            <label><input type="radio" name="cc-tier" value="off"> Off</label>
+            <label><input type="radio" name="cc-tier" value="basic"> Basic</label>
+            <label><input type="radio" name="cc-tier" value="premium" checked> Premium</label>
+          </div>
+        </div>
+        <div class="cap-body">
+          <label class="field">
+            <span>Sampling % (of messages reviewed)</span>
+            <input id="cc-sampling" type="number" min="1" max="100" value="10" />
+          </label>
+          <div class="field checkbox-grid">
+            <span class="field-label">Zones in scope</span>
+            <label><input type="checkbox" class="cc-zone" value="z1b"> Z1B</label>
+            <label><input type="checkbox" class="cc-zone" value="z2" checked> Z2</label>
+            <label><input type="checkbox" class="cc-zone" value="z3" checked> Z3</label>
+          </div>
+          <p class="meter-line" id="cc-meter">—</p>
+        </div>
+      </div>
+
+      <!-- Data Lifecycle Management -->
+      <div class="cap" id="cap-dlm">
+        <div class="cap-head">
+          <h3>Data Lifecycle Management</h3>
+          <div class="cap-controls">
+            <label><input type="radio" name="dlm-tier" value="off"> Off</label>
+            <label><input type="radio" name="dlm-tier" value="basic"> Basic</label>
+            <label><input type="radio" name="dlm-tier" value="premium" checked> Premium</label>
+          </div>
+        </div>
+        <div class="cap-body">
+          <label class="field">
+            <span>Retention period</span>
+            <select id="dlm-retention">
+              <option value="1">1 year</option>
+              <option value="3" selected>3 years</option>
+              <option value="7">7 years</option>
+              <option value="10">10 years</option>
+            </select>
+          </label>
+          <div class="field checkbox-grid">
+            <span class="field-label">Zones in scope</span>
+            <label><input type="checkbox" class="dlm-zone" value="z1b" checked> Z1B</label>
+            <label><input type="checkbox" class="dlm-zone" value="z2" checked> Z2</label>
+            <label><input type="checkbox" class="dlm-zone" value="z3" checked> Z3</label>
+          </div>
+          <p class="meter-line" id="dlm-meter">—</p>
+        </div>
+      </div>
+
+      <!-- Collection Policies (AI Sites) -->
+      <div class="cap" id="cap-cp">
+        <div class="cap-head">
+          <h3>Collection Policies <span class="muted">(AI sites — Copilot, agents)</span></h3>
+          <div class="cap-controls">
+            <label><input type="radio" name="cp-tier" value="off"> Off</label>
+            <label><input type="radio" name="cp-tier" value="on" checked> On</label>
+          </div>
+        </div>
+        <div class="cap-body">
+          <label class="field">
+            <span>AI-site interaction coverage % <small class="hint">(% of Z3 traffic that's AI-tool interactions)</small></span>
+            <input id="cp-coverage" type="number" min="1" max="100" value="40" />
+          </label>
+          <p class="meter-line" id="cp-meter">—</p>
+        </div>
+      </div>
+
+      <!-- Audit -->
+      <div class="cap" id="cap-audit">
+        <div class="cap-head">
+          <h3>Audit</h3>
+          <div class="cap-controls">
+            <label><input type="radio" name="audit-tier" value="standard" checked> Standard</label>
+            <label><input type="radio" name="audit-tier" value="premium"> Premium</label>
+          </div>
+        </div>
+        <div class="cap-body">
+          <p class="hint">Z1B / Z2 audit volume is included with the subscription. Z3 audit retention is billable.</p>
+          <p class="meter-line" id="audit-meter">—</p>
+        </div>
+      </div>
+
+      <!-- Insider Risk Management -->
+      <div class="cap" id="cap-irm">
+        <div class="cap-head">
+          <h3>Insider Risk Management</h3>
+          <div class="cap-controls">
+            <label><input type="radio" name="irm-tier" value="off"> Off</label>
+            <label><input type="radio" name="irm-tier" value="standard"> Standard</label>
+            <label><input type="radio" name="irm-tier" value="premium" checked> Premium</label>
+          </div>
+        </div>
+        <div class="cap-body">
+          <p class="hint">
+            Billed on activity log volume processed.
+            Number of indicators or policies does <strong>not</strong> affect price.
+          </p>
+          <label class="field">
+            <span>Activity log volume <small class="hint">(M logs / mo, derived from monitored users; override if known)</small></span>
+            <input id="irm-logs" type="number" min="0" step="0.1" value="2.0" />
+          </label>
+          <p class="meter-line" id="irm-meter">—</p>
+        </div>
+      </div>
+
+      <!-- DSI -->
+      <div class="cap" id="cap-dsi">
+        <div class="cap-head">
+          <h3>Data Security Investigations</h3>
+          <div class="cap-controls">
+            <label><input type="radio" name="dsi-tier" value="off"> Off</label>
+            <label><input type="radio" name="dsi-tier" value="on" checked> On</label>
+          </div>
+        </div>
+        <div class="cap-body">
+          <div class="grid-2">
+            <label class="field">
+              <span>Storage (GB-month)</span>
+              <input id="dsi-gb" type="number" min="0" value="100" />
+            </label>
+            <label class="field">
+              <span>AI compute units</span>
+              <input id="dsi-units" type="number" min="0" value="10" />
+            </label>
+          </div>
+          <p class="meter-line" id="dsi-meter">—</p>
+        </div>
+      </div>
+
+      <!-- eDiscovery -->
+      <div class="cap" id="cap-ed">
+        <div class="cap-head">
+          <h3>eDiscovery Premium</h3>
+          <div class="cap-controls">
+            <label><input type="radio" name="ed-tier" value="off"> Off</label>
+            <label><input type="radio" name="ed-tier" value="on" checked> On</label>
+          </div>
+        </div>
+        <div class="cap-body">
+          <label class="field">
+            <span>Review-set storage (GB-month)</span>
+            <input id="ed-gb" type="number" min="0" value="50" />
+          </label>
+          <p class="meter-line" id="ed-meter">—</p>
+        </div>
+      </div>
+
+      <!-- Endpoint DLP -->
+      <div class="cap" id="cap-edlp">
+        <div class="cap-head">
+          <h3>Endpoint DLP</h3>
+          <span class="pill pill-free">Included with E5</span>
+        </div>
+        <div class="cap-body">
+          <p class="hint">No PAYG meter. Available without additional cost when E5 is selected above.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== METHODOLOGY ============== -->
+    <section class="card" id="methodology">
+      <h2>Methodology &amp; meter mapping</h2>
+      <table class="meters">
+        <thead>
+          <tr><th>Capability</th><th>Meter</th><th>Rate</th><th>Conversion</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>CC Premium</td><td>Text records</td><td>$0.50 / 1,000</td><td>1 msg ≈ 2.5 records</td></tr>
+          <tr><td>DLM Premium</td><td>Messages × retention</td><td>$6.00 / 1M</td><td>multiplied by years</td></tr>
+          <tr><td>Collection Policies (Z3)</td><td>Requests</td><td>$0.50 / 10,000</td><td>1 msg ≈ 2.5 requests</td></tr>
+          <tr><td>Audit Standard (Z3)</td><td>Records</td><td>$15.00 / 1M</td><td>1 msg ≈ 1.5 records</td></tr>
+          <tr><td>Audit Standard (Z1B/Z2)</td><td>—</td><td>$0 included</td><td>—</td></tr>
+          <tr><td>IRM Premium</td><td>Activity logs</td><td>tier-based on volume</td><td>indicators irrelevant</td></tr>
+          <tr><td>DSI Storage</td><td>GB-month</td><td>$5.00 / GB-mo</td><td>direct input</td></tr>
+          <tr><td>DSI AI Compute</td><td>Compute units</td><td>$5.00 / unit</td><td>direct input</td></tr>
+          <tr><td>eDiscovery Premium</td><td>GB-month</td><td>$20.00 / GB-mo</td><td>direct input</td></tr>
+          <tr><td>Endpoint DLP</td><td>—</td><td>$0 with E5</td><td>—</td></tr>
+        </tbody>
+      </table>
+      <p class="hint">
+        Rates and zone defaults are derived from the original PAYG snapshot reviewed during this exercise.
+        Treat as planning estimates only; reconcile with the official Purview pricing page before commitment.
+      </p>
+    </section>
+  </main>
+
+  <!-- ============== STICKY TOTAL ============== -->
+  <div class="totalbar">
+    <div class="total-left">
+      <strong>Estimated PAYG total</strong>
+      <span class="muted">(monthly, USD; eDiscovery itemised separately)</span>
+    </div>
+    <div class="total-right">
+      <div class="total-main"><span id="total-payg">$0.00</span> <small>/ mo</small></div>
+      <div class="total-sub">+ <span id="total-ed">$0.00</span> eDiscovery</div>
+    </div>
+    <button class="reveal" id="reveal-btn" type="button">Show derivation ▾</button>
+  </div>
+
+  <!-- ============== DERIVATION DRAWER ============== -->
+  <aside class="drawer" id="drawer" hidden>
+    <h3>Cost derivation</h3>
+    <ul id="deriv-list"></ul>
+  </aside>
+
+  <footer class="page-footer">
+    <p>
+      AI-generated planning aid. Built from the engineering PAYG snapshot reviewed during the
+      <em>Validating PAYG calculator</em> session. Source on
+      <a href="https://github.com/tonytha/tonytha.github.io">GitHub</a>.
+    </p>
+  </footer>
+
+  <script src="app.js" defer></script>
 </body>
 </html>
