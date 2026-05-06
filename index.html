@@ -4,225 +4,283 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Microsoft Purview AI — PAYG Calculator</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <header class="page-header">
     <div class="title-row">
       <h1>Microsoft Purview AI <span class="muted">— PAYG Calculator</span></h1>
-      <span class="ai-badge" title="AI-generated artifact">AI&nbsp;generated</span>
+      <span class="ai-badge">AI-generated · directional</span>
     </div>
     <p class="subtitle">
-      Customer-facing reframe of the engineering PAYG calculator.
-      Knobs mirror what tenant admins actually configure in Purview, not internal meters.
-      Volume drives billing — see <a href="#methodology">methodology</a>.
+      Estimate monthly Pay-As-You-Go (PAYG) cost for Purview AI capabilities by entering your monthly
+      AI interaction volume per zone. Knobs mirror the Purview admin controls customers actually configure.
+      Inspired by the
+      <a href="https://refactored-enigma-l1ygz9q.pages.github.io" target="_blank" rel="noopener">reference calculator</a>;
+      rates are illustrative — confirm against the official Microsoft pricing page.
     </p>
   </header>
 
   <main>
-    <!-- ============== TENANT BASELINE ============== -->
-    <section class="card">
-      <h2>1. Tenant baseline</h2>
+    <!-- TENANT CONTEXT -->
+    <section class="card" aria-labelledby="tenant-h">
+      <h2 id="tenant-h">1 · Tenant context</h2>
+      <p class="muted hint" style="margin-top:-4px">
+        License determines which Premium meters are unlocked. Seats is informational only — actual
+        billing is driven by AI interaction volume below.
+      </p>
       <div class="grid-2">
         <label class="field">
-          <span>License</span>
+          <span>Microsoft 365 license</span>
           <select id="license">
-            <option value="E3">Microsoft 365 E3</option>
-            <option value="E5" selected>Microsoft 365 E5</option>
+            <option value="E5" selected>E5 (unlocks Premium meters)</option>
+            <option value="E3">E3 (Standard / Basic only)</option>
           </select>
-          <small class="hint">E5 unlocks Premium tiers (CC Premium, Audit Premium, IRM Premium, etc.). Endpoint DLP is included with E5.</small>
+          <p class="hint">E3 falls back to Basic CC ($0), Standard Audit, Standard IRM, no DSI/eDiscovery PAYG.</p>
         </label>
         <label class="field">
-          <span>Total monitored seats (org-wide)</span>
-          <input id="seats" type="number" min="1" value="1000" />
-          <small class="hint">Used to bound per-zone user counts and as a sanity check.</small>
+          <span>Total seats <span class="muted">(informational)</span></span>
+          <input type="number" id="seats" min="0" value="1000" />
+          <p class="hint">Reference only — does not change cost.</p>
         </label>
       </div>
     </section>
 
-    <!-- ============== ACTIVITY ZONES ============== -->
-    <section class="card">
-      <h2>2. Activity zones <span class="muted">(per Purview activity model)</span></h2>
-      <p class="hint">
-        Volume is derived from <em>users in zone × messages per user per month</em>.
-        Activity profile is implicit from this, not an extra knob.
-      </p>
+    <!-- ACTIVITY ZONES -->
+    <section class="card" aria-labelledby="zones-h">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:8px;">
+        <div>
+          <h2 id="zones-h" style="margin:0">2 · AI interaction volume per zone</h2>
+          <p class="muted hint" style="margin:4px 0 0 0">
+            Estimate monthly AI interactions in each zone. Activity profile (basic/heavy) is implicit
+            from message volume — no separate intensity selector needed.
+          </p>
+        </div>
+        <label class="field" style="min-width:220px">
+          <span>Focus</span>
+          <select id="focus">
+            <option value="all" selected>All zones</option>
+            <option value="z1">Z1B — Microsoft Copilots only</option>
+            <option value="z2">Z2 — Foundry / Custom Agents only</option>
+            <option value="z3">Z3 — 3rd-Party AI sites only</option>
+          </select>
+          <p class="hint">Filters which zones contribute to cost.</p>
+        </label>
+      </div>
+
       <div class="zone-grid">
-        <div class="zone" data-zone="z1a">
-          <div class="zone-head">
-            <h3>Z1A — Low-risk reference</h3>
-            <span class="pill pill-free">Free with subscription</span>
+        <!-- Card 1: Microsoft Copilots (1st Party) -->
+        <article class="zone-card" data-zone-group="z1">
+          <header class="zone-card-head">
+            <span class="zone-card-icon zone-card-icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </span>
+            <h3>Microsoft Copilots <span class="zone-card-tag">(1st Party)</span></h3>
+          </header>
+          <div class="zone-card-body">
+            <!-- Z1A nested -->
+            <div class="zone" data-zone="z1a">
+              <div class="zone-label">Zone 1A · Microsoft 365 Copilot</div>
+              <div class="zone-block zone-block--free">
+                <div class="zone-block-head">
+                  <span class="zone-block-title">Microsoft 365 Copilot license area</span>
+                  <span class="pill pill-free">Free / Included</span>
+                </div>
+                <p class="zone-block-hint">
+                  Word, Excel, PowerPoint, Outlook, Teams Copilot. Bundled in M365 Copilot SKU —
+                  does not add to PAYG. Reference only.
+                </p>
+              </div>
+            </div>
+            <!-- Z1B nested -->
+            <div class="zone" data-zone="z1b">
+              <div class="zone-label">Zone 1B · Microsoft Copilots</div>
+              <p class="zone-sub">
+                Fabric, Security, Sales, Service, Studio Copilots. Billed for CC + DLM if in scope.
+              </p>
+              <label class="field">
+                <span>Monthly AI interactions</span>
+                <input type="number" id="z1b-msgs" min="0" value="10000" />
+              </label>
+              <div class="pill-row">
+                <span class="pill pill-needed">Needed: CC · DLM</span>
+              </div>
+            </div>
           </div>
-          <p class="hint">Telemetry baseline; not billed. Shown for completeness.</p>
-        </div>
+        </article>
 
-        <div class="zone" data-zone="z1b">
-          <div class="zone-head">
-            <h3>Z1B — Low activity</h3>
-            <span class="pill pill-z">Z1B</span>
+        <!-- Card 2: Custom Agents (2nd Party) -->
+        <article class="zone-card" data-zone-group="z2">
+          <header class="zone-card-head">
+            <span class="zone-card-icon zone-card-icon--violet" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </span>
+            <h3>Custom Agents <span class="zone-card-tag">(2nd Party)</span></h3>
+          </header>
+          <div class="zone-card-body">
+            <div class="zone" data-zone="z2">
+              <div class="zone-label">Zone 2 · Microsoft Foundry / Custom Agents</div>
+              <p class="zone-sub">
+                Custom agents built via Foundry, Copilot Studio, etc. Billed for CC + DLM if in scope.
+              </p>
+              <label class="field">
+                <span>Monthly AI interactions</span>
+                <input type="number" id="z2-msgs" min="0" value="50000" />
+              </label>
+              <div class="pill-row">
+                <span class="pill pill-needed">Needed: CC · DLM</span>
+              </div>
+            </div>
           </div>
-          <div class="grid-2">
-            <label class="field">
-              <span>Users in zone</span>
-              <input class="users" type="number" min="0" value="50" />
-            </label>
-            <label class="field">
-              <span>Messages / user / month</span>
-              <input class="mpu" type="number" min="0" value="200" />
-            </label>
-          </div>
-          <div class="derived"><span>Estimated volume:</span> <output class="vol">10,000</output> msgs/mo</div>
-        </div>
+        </article>
 
-        <div class="zone" data-zone="z2">
-          <div class="zone-head">
-            <h3>Z2 — Mid activity</h3>
-            <span class="pill pill-z">Z2</span>
+        <!-- Card 3: 3rd Party AI apps -->
+        <article class="zone-card" data-zone-group="z3">
+          <header class="zone-card-head">
+            <span class="zone-card-icon zone-card-icon--amber" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a13 13 0 010 18"/><path d="M12 3a13 13 0 000 18"/></svg>
+            </span>
+            <h3>3rd Party AI apps</h3>
+          </header>
+          <div class="zone-card-body">
+            <div class="zone" data-zone="z3">
+              <div class="zone-label">Zone 3 · ChatGPT, Claude, Gemini, shadow AI &amp; other AI sites</div>
+              <p class="zone-sub">
+                Accessed via Edge. Adds CP + Audit on top of CC/DLM.
+              </p>
+              <label class="field">
+                <span>Monthly AI interactions</span>
+                <input type="number" id="z3-msgs" min="0" value="25000" />
+              </label>
+              <div class="pill-row">
+                <span class="pill pill-needed">Needed: CC · DLM · CP · Audit</span>
+              </div>
+            </div>
           </div>
-          <div class="grid-2">
-            <label class="field">
-              <span>Users in zone</span>
-              <input class="users" type="number" min="0" value="100" />
-            </label>
-            <label class="field">
-              <span>Messages / user / month</span>
-              <input class="mpu" type="number" min="0" value="500" />
-            </label>
-          </div>
-          <div class="derived"><span>Estimated volume:</span> <output class="vol">50,000</output> msgs/mo</div>
-        </div>
-
-        <div class="zone" data-zone="z3">
-          <div class="zone-head">
-            <h3>Z3 — High activity (frontline / regulated)</h3>
-            <span class="pill pill-z3">Z3 (billable for most meters)</span>
-          </div>
-          <div class="grid-2">
-            <label class="field">
-              <span>Users in zone</span>
-              <input class="users" type="number" min="0" value="500" />
-            </label>
-            <label class="field">
-              <span>Messages / user / month</span>
-              <input class="mpu" type="number" min="0" value="50" />
-            </label>
-          </div>
-          <div class="derived"><span>Estimated volume:</span> <output class="vol">25,000</output> msgs/mo</div>
-        </div>
+        </article>
       </div>
     </section>
 
-    <!-- ============== CAPABILITY KNOBS ============== -->
-    <section class="card">
-      <h2>3. Capabilities — admin controls only</h2>
-      <p class="hint">Each row exposes the same controls a Purview admin sees. SITs / labels / indicators do <strong>not</strong> change billing and are intentionally hidden.</p>
+    <!-- CAPABILITIES -->
+    <section class="card" aria-labelledby="cap-h">
+      <h2 id="cap-h">3 · Purview capabilities</h2>
+      <p class="muted hint" style="margin-top:-4px">
+        Knobs mirror what an admin configures in the Purview portal — not low-level metering inputs
+        like SIT counts or character limits.
+      </p>
 
-      <!-- Communications Compliance -->
+      <!-- COMMUNICATION COMPLIANCE -->
       <div class="cap" id="cap-cc">
         <div class="cap-head">
-          <h3>Communications Compliance</h3>
+          <h3>Communication Compliance</h3>
           <div class="cap-controls">
-            <label><input type="radio" name="cc-tier" value="off"> Off</label>
-            <label><input type="radio" name="cc-tier" value="basic"> Basic</label>
-            <label><input type="radio" name="cc-tier" value="premium" checked> Premium</label>
+            <label><input type="radio" name="cc-mode" value="off" /> Off</label>
+            <label><input type="radio" name="cc-mode" value="basic" /> Basic <span class="muted">($0)</span></label>
+            <label><input type="radio" name="cc-mode" value="premium" checked /> Premium</label>
           </div>
         </div>
         <div class="cap-body">
-          <label class="field">
-            <span>Sampling % (of messages reviewed)</span>
-            <input id="cc-sampling" type="number" min="1" max="100" value="10" />
-          </label>
-          <div class="field checkbox-grid">
-            <span class="field-label">Zones in scope</span>
-            <label><input type="checkbox" class="cc-zone" value="z1b"> Z1B</label>
-            <label><input type="checkbox" class="cc-zone" value="z2" checked> Z2</label>
-            <label><input type="checkbox" class="cc-zone" value="z3" checked> Z3</label>
+          <div class="grid-2">
+            <label class="field">
+              <span>Sampling %</span>
+              <input type="number" id="cc-sampling" min="0" max="100" value="20" />
+              <p class="hint">% of in-scope messages sampled by CC policy.</p>
+            </label>
+            <div class="field">
+              <span>Zones in scope</span>
+              <div class="checkbox-grid">
+                <label><input type="checkbox" class="cc-scope" value="z1b" checked /> Z1B</label>
+                <label><input type="checkbox" class="cc-scope" value="z2" checked /> Z2</label>
+                <label><input type="checkbox" class="cc-scope" value="z3" checked /> Z3</label>
+              </div>
+              <p class="hint">CC scopes which zones it inspects.</p>
+            </div>
           </div>
           <p class="meter-line" id="cc-meter">—</p>
         </div>
       </div>
 
-      <!-- Data Lifecycle Management -->
+      <!-- DATA LIFECYCLE MGMT -->
       <div class="cap" id="cap-dlm">
         <div class="cap-head">
           <h3>Data Lifecycle Management</h3>
           <div class="cap-controls">
-            <label><input type="radio" name="dlm-tier" value="off"> Off</label>
-            <label><input type="radio" name="dlm-tier" value="basic"> Basic</label>
-            <label><input type="radio" name="dlm-tier" value="premium" checked> Premium</label>
+            <label><input type="radio" name="dlm-mode" value="off" /> Off</label>
+            <label><input type="radio" name="dlm-mode" value="basic" /> Basic</label>
+            <label><input type="radio" name="dlm-mode" value="premium" checked /> Premium</label>
           </div>
         </div>
         <div class="cap-body">
-          <label class="field">
-            <span>Retention period</span>
-            <select id="dlm-retention">
-              <option value="1">1 year</option>
-              <option value="3" selected>3 years</option>
-              <option value="7">7 years</option>
-              <option value="10">10 years</option>
-            </select>
-          </label>
-          <div class="field checkbox-grid">
-            <span class="field-label">Zones in scope</span>
-            <label><input type="checkbox" class="dlm-zone" value="z1b" checked> Z1B</label>
-            <label><input type="checkbox" class="dlm-zone" value="z2" checked> Z2</label>
-            <label><input type="checkbox" class="dlm-zone" value="z3" checked> Z3</label>
+          <div class="grid-2">
+            <label class="field">
+              <span>Retention years</span>
+              <input type="number" id="dlm-retention" min="0" max="10" value="3" />
+              <p class="hint">Volume × years drives DLM PAYG.</p>
+            </label>
+            <div class="field">
+              <span>Zones in scope</span>
+              <div class="checkbox-grid">
+                <label><input type="checkbox" class="dlm-scope" value="z1b" checked /> Z1B</label>
+                <label><input type="checkbox" class="dlm-scope" value="z2" checked /> Z2</label>
+                <label><input type="checkbox" class="dlm-scope" value="z3" checked /> Z3</label>
+              </div>
+            </div>
           </div>
           <p class="meter-line" id="dlm-meter">—</p>
         </div>
       </div>
 
-      <!-- Collection Policies (AI Sites) -->
+      <!-- COLLECTION POLICIES -->
       <div class="cap" id="cap-cp">
         <div class="cap-head">
-          <h3>Collection Policies <span class="muted">(AI sites — Copilot, agents)</span></h3>
+          <h3>Collection Policies <span class="muted">(Z3 only)</span></h3>
           <div class="cap-controls">
-            <label><input type="radio" name="cp-tier" value="off"> Off</label>
-            <label><input type="radio" name="cp-tier" value="on" checked> On</label>
+            <label><input type="radio" name="cp-mode" value="off" /> Off</label>
+            <label><input type="radio" name="cp-mode" value="on" checked /> On</label>
           </div>
         </div>
         <div class="cap-body">
           <label class="field">
-            <span>AI-site interaction coverage % <small class="hint">(% of Z3 traffic that's AI-tool interactions)</small></span>
-            <input id="cp-coverage" type="number" min="1" max="100" value="40" />
+            <span>Coverage % of Z3 traffic</span>
+            <input type="number" id="cp-coverage" min="0" max="100" value="100" />
+            <p class="hint">% of Z3 (3rd-party) interactions captured by CP.</p>
           </label>
           <p class="meter-line" id="cp-meter">—</p>
         </div>
       </div>
 
-      <!-- Audit -->
+      <!-- AUDIT -->
       <div class="cap" id="cap-audit">
         <div class="cap-head">
-          <h3>Audit</h3>
+          <h3>Audit <span class="muted">(Z3 billable)</span></h3>
           <div class="cap-controls">
-            <label><input type="radio" name="audit-tier" value="standard" checked> Standard</label>
-            <label><input type="radio" name="audit-tier" value="premium"> Premium</label>
+            <label><input type="radio" name="audit-mode" value="standard" /> Standard</label>
+            <label><input type="radio" name="audit-mode" value="premium" checked /> Premium</label>
           </div>
         </div>
         <div class="cap-body">
-          <p class="hint">Z1B / Z2 audit volume is included with the subscription. Z3 audit retention is billable.</p>
+          <p class="hint" style="margin:0">
+            Audit records for Z3 are PAYG. Z1B/Z2 audit are bundled in M365 Audit allowance.
+          </p>
           <p class="meter-line" id="audit-meter">—</p>
         </div>
       </div>
 
-      <!-- Insider Risk Management -->
+      <!-- IRM -->
       <div class="cap" id="cap-irm">
         <div class="cap-head">
           <h3>Insider Risk Management</h3>
           <div class="cap-controls">
-            <label><input type="radio" name="irm-tier" value="off"> Off</label>
-            <label><input type="radio" name="irm-tier" value="standard"> Standard</label>
-            <label><input type="radio" name="irm-tier" value="premium" checked> Premium</label>
+            <label><input type="radio" name="irm-mode" value="off" /> Off</label>
+            <label><input type="radio" name="irm-mode" value="standard" /> Standard</label>
+            <label><input type="radio" name="irm-mode" value="premium" checked /> Premium</label>
           </div>
         </div>
         <div class="cap-body">
-          <p class="hint">
-            Billed on activity log volume processed.
-            Number of indicators or policies does <strong>not</strong> affect price.
-          </p>
           <label class="field">
-            <span>Activity log volume <small class="hint">(M logs / mo, derived from monitored users; override if known)</small></span>
-            <input id="irm-logs" type="number" min="0" step="0.1" value="2.0" />
+            <span>Monthly log volume <span class="muted">(M logs)</span></span>
+            <input type="number" id="irm-logs" min="0" step="0.1" value="5" />
+            <p class="hint">IRM PAYG is purely log-volume based. Indicator count does not affect billing.</p>
           </label>
           <p class="meter-line" id="irm-meter">—</p>
         </div>
@@ -231,111 +289,93 @@
       <!-- DSI -->
       <div class="cap" id="cap-dsi">
         <div class="cap-head">
-          <h3>Data Security Investigations</h3>
+          <h3>Data Security Investigations <span class="muted">(E5 only)</span></h3>
           <div class="cap-controls">
-            <label><input type="radio" name="dsi-tier" value="off"> Off</label>
-            <label><input type="radio" name="dsi-tier" value="on" checked> On</label>
+            <label><input type="radio" name="dsi-mode" value="off" /> Off</label>
+            <label><input type="radio" name="dsi-mode" value="on" checked /> On</label>
           </div>
         </div>
         <div class="cap-body">
           <div class="grid-2">
             <label class="field">
-              <span>Storage (GB-month)</span>
-              <input id="dsi-gb" type="number" min="0" value="100" />
+              <span>Storage GB</span>
+              <input type="number" id="dsi-gb" min="0" value="20" />
             </label>
             <label class="field">
-              <span>AI compute units</span>
-              <input id="dsi-units" type="number" min="0" value="10" />
+              <span>Compute units</span>
+              <input type="number" id="dsi-units" min="0" value="10" />
             </label>
           </div>
           <p class="meter-line" id="dsi-meter">—</p>
         </div>
       </div>
 
-      <!-- eDiscovery -->
+      <!-- EDISCOVERY -->
       <div class="cap" id="cap-ed">
         <div class="cap-head">
-          <h3>eDiscovery Premium</h3>
+          <h3>eDiscovery Premium <span class="muted">(E5 only)</span></h3>
           <div class="cap-controls">
-            <label><input type="radio" name="ed-tier" value="off"> Off</label>
-            <label><input type="radio" name="ed-tier" value="on" checked> On</label>
+            <label><input type="radio" name="ed-mode" value="off" /> Off</label>
+            <label><input type="radio" name="ed-mode" value="on" checked /> On</label>
           </div>
         </div>
         <div class="cap-body">
           <label class="field">
-            <span>Review-set storage (GB-month)</span>
-            <input id="ed-gb" type="number" min="0" value="50" />
+            <span>Review-set GB / month</span>
+            <input type="number" id="ed-gb" min="0" value="50" />
           </label>
           <p class="meter-line" id="ed-meter">—</p>
         </div>
       </div>
-
-      <!-- Endpoint DLP -->
-      <div class="cap" id="cap-edlp">
-        <div class="cap-head">
-          <h3>Endpoint DLP</h3>
-          <span class="pill pill-free">Included with E5</span>
-        </div>
-        <div class="cap-body">
-          <p class="hint">No PAYG meter. Available without additional cost when E5 is selected above.</p>
-        </div>
-      </div>
     </section>
 
-    <!-- ============== METHODOLOGY ============== -->
-    <section class="card" id="methodology">
-      <h2>Methodology &amp; meter mapping</h2>
+    <!-- METHODOLOGY -->
+    <section class="card" aria-labelledby="meth-h">
+      <h2 id="meth-h">4 · Methodology &amp; assumed rates</h2>
       <table class="meters">
         <thead>
-          <tr><th>Capability</th><th>Meter</th><th>Rate</th><th>Conversion</th></tr>
+          <tr><th>Meter</th><th>Driver</th><th>Rate (illustrative)</th></tr>
         </thead>
         <tbody>
-          <tr><td>CC Premium</td><td>Text records</td><td>$0.50 / 1,000</td><td>1 msg ≈ 2.5 records</td></tr>
-          <tr><td>DLM Premium</td><td>Messages × retention</td><td>$6.00 / 1M</td><td>multiplied by years</td></tr>
-          <tr><td>Collection Policies (Z3)</td><td>Requests</td><td>$0.50 / 10,000</td><td>1 msg ≈ 2.5 requests</td></tr>
-          <tr><td>Audit Standard (Z3)</td><td>Records</td><td>$15.00 / 1M</td><td>1 msg ≈ 1.5 records</td></tr>
-          <tr><td>Audit Standard (Z1B/Z2)</td><td>—</td><td>$0 included</td><td>—</td></tr>
-          <tr><td>IRM Premium</td><td>Activity logs</td><td>tier-based on volume</td><td>indicators irrelevant</td></tr>
-          <tr><td>DSI Storage</td><td>GB-month</td><td>$5.00 / GB-mo</td><td>direct input</td></tr>
-          <tr><td>DSI AI Compute</td><td>Compute units</td><td>$5.00 / unit</td><td>direct input</td></tr>
-          <tr><td>eDiscovery Premium</td><td>GB-month</td><td>$20.00 / GB-mo</td><td>direct input</td></tr>
-          <tr><td>Endpoint DLP</td><td>—</td><td>$0 with E5</td><td>—</td></tr>
+          <tr><td>CC Premium</td><td>Σ(scope zones) × sampling%</td><td>$0.50 / 1k records (× 2.5 records/msg)</td></tr>
+          <tr><td>DLM Premium</td><td>Σ(scope zones) × retention years</td><td>$6.00 / M msg-years</td></tr>
+          <tr><td>Collection Policies</td><td>Z3 × coverage%</td><td>$0.50 / 10k requests (× 2.5 req/msg)</td></tr>
+          <tr><td>Audit Premium (Z3)</td><td>Z3 messages × 1.5 records</td><td>$15.00 / M records</td></tr>
+          <tr><td>IRM</td><td>Log volume (independent)</td><td>$1.00 / M logs (Premium ×2.0)</td></tr>
+          <tr><td>DSI</td><td>GB + compute units</td><td>$5.00 / GB and $5.00 / unit</td></tr>
+          <tr><td>eDiscovery Premium</td><td>Review-set GB</td><td>$20.00 / GB</td></tr>
         </tbody>
       </table>
-      <p class="hint">
-        Rates and zone defaults are derived from the original PAYG snapshot reviewed during this exercise.
-        Treat as planning estimates only; reconcile with the official Purview pricing page before commitment.
-      </p>
     </section>
   </main>
 
-  <!-- ============== STICKY TOTAL ============== -->
-  <div class="totalbar">
+  <!-- STICKY TOTAL -->
+  <div class="totalbar" role="status" aria-live="polite">
     <div class="total-left">
-      <strong>Estimated PAYG total</strong>
-      <span class="muted">(monthly, USD; eDiscovery itemised separately)</span>
+      <strong>Estimated monthly Purview AI PAYG</strong>
+      <span class="muted">Excludes baseline M365 / Purview SKU costs.</span>
     </div>
+    <button class="reveal" id="reveal-btn" type="button">Show derivations</button>
     <div class="total-right">
-      <div class="total-main"><span id="total-payg">$0.00</span> <small>/ mo</small></div>
-      <div class="total-sub">+ <span id="total-ed">$0.00</span> eDiscovery</div>
+      <div class="total-main">$<span id="total-payg">0.00</span> <small>/ mo</small></div>
+      <div class="total-sub">+ eDiscovery: $<span id="total-ed">0.00</span> / mo</div>
     </div>
-    <button class="reveal" id="reveal-btn" type="button">Show derivation ▾</button>
   </div>
 
-  <!-- ============== DERIVATION DRAWER ============== -->
   <aside class="drawer" id="drawer" hidden>
-    <h3>Cost derivation</h3>
+    <h3>Derivation ledger</h3>
     <ul id="deriv-list"></ul>
   </aside>
 
   <footer class="page-footer">
     <p>
-      AI-generated planning aid. Built from the engineering PAYG snapshot reviewed during the
-      <em>Validating PAYG calculator</em> session. Source on
-      <a href="https://github.com/tonytha/tonytha.github.io">GitHub</a>.
+      Open source on
+      <a href="https://github.com/tonytha/tonytha.github.io" target="_blank" rel="noopener">GitHub</a>.
+      AI-generated for directional planning only — confirm rates with the official
+      <a href="https://learn.microsoft.com/purview" target="_blank" rel="noopener">Microsoft Purview pricing</a>.
     </p>
   </footer>
 
-  <script src="app.js" defer></script>
+  <script src="./app.js"></script>
 </body>
 </html>

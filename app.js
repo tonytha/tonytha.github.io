@@ -1,202 +1,225 @@
-// Microsoft Purview AI — PAYG Calculator
-// AI-generated planning aid. Mirrors customer-facing Purview admin controls.
-//
-// Meter rates extracted from the engineering PAYG snapshot reviewed during
-// the "Validating PAYG calculator" session. Treat as planning estimates only.
+/* Purview AI PAYG calculator
+ * Simplified input model (mirrors https://refactored-enigma-l1ygz9q.pages.github.io):
+ *   - one monthly-interactions input per zone (Z1B, Z2, Z3)
+ *   - Z1A is free reference, no input
+ *   - Focus dropdown filters which zones contribute to cost
+ *   - All capability knobs mirror Purview admin controls (no low-level meters)
+ */
 
 const RATES = {
-  ccPremiumPerKRecord: 0.50,        // $/1k text records
-  msgToTextRecords: 2.5,            // 1 msg ≈ 2.5 text records
-  dlmPerMmsg: 6.00,                 // $/1M messages
-  cpPerKReq: 0.50,                  // $/10k requests; we'll use /10000 in code
+  ccPremiumPerKRecord: 0.50,
+  msgToTextRecords: 2.5,
+  dlmPerMmsg: 6.00,
+  cpPerKReq: 0.50,
   cpReqDivisor: 10000,
-  msgToCpRequests: 2.5,             // 1 msg ≈ 2.5 collection-policy requests
-  auditPerMrec: 15.00,              // $/1M audit records
+  msgToCpRequests: 2.5,
+  auditPerMrec: 15.00,
   msgToAuditRecords: 1.5,
-  dsiGB: 5.00,                      // $/GB-month
-  dsiUnit: 5.00,                    // $/AI compute unit
-  edGB: 20.00,                      // $/GB-month
-  irmPerMlog: 1.00,                 // $/1M logs (planning approx — confirm w/ official pricing)
-  irmPremiumMultiplier: 2.0         // premium ≈ 2× standard for planning
+  dsiGB: 5.00,
+  dsiUnit: 5.00,
+  edGB: 20.00,
+  irmPerMlog: 1.00,
+  irmPremiumMultiplier: 2.0,
 };
 
-const ZONES = ['z1a','z1b','z2','z3'];
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+const fmt = (n) => Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '0';
+const num = (id, def = 0) => {
+  const v = parseFloat(($(id) || {}).value);
+  return Number.isFinite(v) ? v : def;
+};
+const radio = (name) => {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : null;
+};
+const scope = (cls) => $$(`.${cls}`).filter(c => c.checked).map(c => c.value);
 
-function $(sel, root=document) { return root.querySelector(sel); }
-function $$(sel, root=document) { return Array.from(root.querySelectorAll(sel)); }
-function fmt(n) {
-  if (!isFinite(n)) return '$0.00';
-  return '$' + n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-}
-function fmtInt(n) {
-  if (!isFinite(n)) return '0';
-  return Math.round(n).toLocaleString();
-}
-
-// -------- read inputs --------
 function readZones() {
-  const out = {};
-  for (const z of ['z1b','z2','z3']) {
-    const card = document.querySelector(`.zone[data-zone="${z}"]`);
-    const users = parseFloat(card.querySelector('.users').value) || 0;
-    const mpu = parseFloat(card.querySelector('.mpu').value) || 0;
-    const vol = users * mpu;
-    out[z] = { users, mpu, vol };
-    card.querySelector('.vol').value = fmtInt(vol);
-  }
-  out.z1a = { users: 0, mpu: 0, vol: 0 };
-  return out;
+  const focus = ($('#focus') || {}).value || 'all';
+  const include = (z) => focus === 'all' || focus === z;
+  return {
+    z1a: { vol: 0 },
+    z1b: { vol: include('z1') ? num('#z1b-msgs') : 0 },
+    z2:  { vol: include('z2') ? num('#z2-msgs')  : 0 },
+    z3:  { vol: include('z3') ? num('#z3-msgs')  : 0 },
+  };
 }
 
-function readChecked(name) {
-  return document.querySelector(`input[name="${name}"]:checked`)?.value || 'off';
-}
-
-function readZoneCheckboxes(cls) {
-  return $$('.' + cls).filter(c => c.checked).map(c => c.value);
-}
-
-// -------- per-capability cost --------
-function ccCost(zones, tier, sampling, scopeZones) {
-  if (tier === 'off' || tier === 'basic') return { cost: 0, note: tier === 'basic' ? 'Basic — included, no PAYG meter' : 'Off' };
-  const vol = scopeZones.reduce((s, z) => s + (zones[z]?.vol || 0), 0);
-  const reviewed = vol * (sampling / 100);
-  const records = reviewed * RATES.msgToTextRecords;
-  const cost = records / 1000 * RATES.ccPremiumPerKRecord;
-  const note = `Premium: ${fmtInt(vol)} msgs × ${sampling}% sample × ${RATES.msgToTextRecords} rec/msg = ${fmtInt(records)} text records → ${fmt(cost)}`;
-  return { cost, note };
-}
-
-function dlmCost(zones, tier, retention, scopeZones) {
-  if (tier === 'off' || tier === 'basic') return { cost: 0, note: tier === 'basic' ? 'Basic — included, no PAYG meter' : 'Off' };
-  const vol = scopeZones.reduce((s, z) => s + (zones[z]?.vol || 0), 0);
-  const cost = (vol / 1_000_000) * RATES.dlmPerMmsg * retention;
-  const note = `Premium: ${fmtInt(vol)} msgs/mo × $${RATES.dlmPerMmsg}/M × ${retention}-yr retention → ${fmt(cost)}`;
-  return { cost, note };
-}
-
-function cpCost(zones, tier, coveragePct) {
-  if (tier === 'off') return { cost: 0, note: 'Off' };
-  const vol = zones.z3.vol;
-  const reqs = vol * (coveragePct / 100) * RATES.msgToCpRequests;
-  const cost = reqs / RATES.cpReqDivisor * RATES.cpPerKReq;
-  const note = `Z3 only: ${fmtInt(vol)} msgs × ${coveragePct}% AI coverage × ${RATES.msgToCpRequests} req/msg = ${fmtInt(reqs)} requests → ${fmt(cost)}`;
-  return { cost, note };
-}
-
-function auditCost(zones, tier) {
-  // standard meter applies to Z3; premium uses same meter at planning level
-  const vol = zones.z3.vol;
-  const records = vol * RATES.msgToAuditRecords;
-  const baseCost = (records / 1_000_000) * RATES.auditPerMrec;
-  const cost = tier === 'premium' ? baseCost : baseCost; // same meter; Premium adds features
-  const tierLabel = tier === 'premium' ? 'Premium' : 'Standard';
-  const note = `${tierLabel}: Z3 only — ${fmtInt(vol)} msgs × ${RATES.msgToAuditRecords} = ${fmtInt(records)} records → ${fmt(cost)}  (Z1B/Z2 included free)`;
-  return { cost, note };
-}
-
-function irmCost(tier, mlogs) {
-  if (tier === 'off') return { cost: 0, note: 'Off' };
-  const mult = tier === 'premium' ? RATES.irmPremiumMultiplier : 1.0;
-  const cost = mlogs * RATES.irmPerMlog * mult;
-  const note = `${tier === 'premium' ? 'Premium' : 'Standard'}: ${mlogs}M logs/mo × $${(RATES.irmPerMlog*mult).toFixed(2)}/M → ${fmt(cost)}  (indicators do not affect price)`;
-  return { cost, note };
-}
-
-function dsiCost(tier, gb, units) {
-  if (tier === 'off') return { cost: 0, note: 'Off' };
-  const cost = gb * RATES.dsiGB + units * RATES.dsiUnit;
-  const note = `${gb} GB × $${RATES.dsiGB} + ${units} units × $${RATES.dsiUnit} → ${fmt(cost)}`;
-  return { cost, note };
-}
-
-function edCost(tier, gb) {
-  if (tier === 'off') return { cost: 0, note: 'Off' };
-  const cost = gb * RATES.edGB;
-  const note = `${gb} GB-mo × $${RATES.edGB} → ${fmt(cost)}`;
-  return { cost, note };
-}
-
-// -------- main recompute --------
-function recompute() {
-  const license = $('#license').value;
-
-  // Disable Premium tiers when E3 is selected
-  const premiumDisable = license !== 'E5';
-  $$('input[type=radio][value=premium]').forEach(r => {
-    r.disabled = premiumDisable;
-    if (premiumDisable && r.checked) {
-      // fall back to basic / standard if available, otherwise off
-      const name = r.name;
-      const fallback = document.querySelector(`input[name="${name}"][value="basic"]`)
-        || document.querySelector(`input[name="${name}"][value="standard"]`)
-        || document.querySelector(`input[name="${name}"][value="on"]`);
-      if (fallback) fallback.checked = true;
-    }
+function applyFocusFilter() {
+  const focus = ($('#focus') || {}).value || 'all';
+  const map = { z1a: true, z1b: true, z2: true, z3: true };
+  if (focus === 'z1') { map.z2 = false; map.z3 = false; }
+  if (focus === 'z2') { map.z1b = false; map.z3 = false; }
+  if (focus === 'z3') { map.z1b = false; map.z2 = false; }
+  $$('.zone').forEach(el => {
+    const z = el.getAttribute('data-zone');
+    el.style.display = map[z] ? '' : 'none';
   });
+  // Hide whole zone-card wrappers when none of their inner zones are visible
+  const groupVisible = { z1: map.z1a || map.z1b, z2: map.z2, z3: map.z3 };
+  $$('.zone-card[data-zone-group]').forEach(el => {
+    const g = el.getAttribute('data-zone-group');
+    el.style.display = groupVisible[g] ? '' : 'none';
+  });
+}
 
+/* ---------------- cost functions (consume zones[z].vol) ---------------- */
+function ccCost(zones, license) {
+  const mode = radio('cc-mode');
+  if (mode === 'off') return { cost: 0, line: 'CC: off' };
+  const sampling = num('#cc-sampling') / 100;
+  const inScope = scope('cc-scope');
+  const vol = inScope.reduce((s, z) => s + (zones[z]?.vol || 0), 0);
+  const sampled = vol * sampling;
+  const records = sampled * RATES.msgToTextRecords;
+  if (mode === 'basic' || license === 'E3') {
+    return { cost: 0, line: `CC Basic: ${fmt(sampled)} sampled msgs → $0 (Basic — included)` };
+  }
+  const cost = (records / 1000) * RATES.ccPremiumPerKRecord;
+  return { cost, line: `CC Premium: ${fmt(vol)} × ${sampling*100}% = ${fmt(sampled)} msgs × ${RATES.msgToTextRecords} = ${fmt(records)} records → $${fmt(cost)}` };
+}
+
+function dlmCost(zones, license) {
+  const mode = radio('dlm-mode');
+  if (mode === 'off') return { cost: 0, line: 'DLM: off' };
+  const years = num('#dlm-retention');
+  const inScope = scope('dlm-scope');
+  const vol = inScope.reduce((s, z) => s + (zones[z]?.vol || 0), 0);
+  const mMsgYears = (vol / 1_000_000) * years;
+  if (mode === 'basic') {
+    return { cost: 0, line: `DLM Basic: ${fmt(vol)} msgs × ${years}yr → $0 (Basic — included)` };
+  }
+  const cost = mMsgYears * RATES.dlmPerMmsg;
+  return { cost, line: `DLM Premium: ${fmt(vol)} msgs × ${years}yr = ${fmt(mMsgYears)} M msg-yr → $${fmt(cost)}` };
+}
+
+function cpCost(zones) {
+  if (radio('cp-mode') === 'off') return { cost: 0, line: 'CP: off' };
+  const coverage = num('#cp-coverage') / 100;
+  const vol = (zones.z3?.vol || 0) * coverage;
+  const requests = vol * RATES.msgToCpRequests;
+  const cost = (requests / RATES.cpReqDivisor) * RATES.cpPerKReq;
+  return { cost, line: `CP: Z3 ${fmt(zones.z3?.vol || 0)} × ${coverage*100}% = ${fmt(vol)} msgs × ${RATES.msgToCpRequests} = ${fmt(requests)} requests → $${fmt(cost)}` };
+}
+
+function auditCost(zones, license) {
+  const mode = radio('audit-mode');
+  if (license === 'E3' || mode === 'standard') {
+    return { cost: 0, line: `Audit Standard: bundled — $0` };
+  }
+  const z3 = zones.z3?.vol || 0;
+  const records = z3 * RATES.msgToAuditRecords;
+  const cost = (records / 1_000_000) * RATES.auditPerMrec;
+  return { cost, line: `Audit Premium: Z3 ${fmt(z3)} × ${RATES.msgToAuditRecords} = ${fmt(records)} records → $${fmt(cost)}` };
+}
+
+function irmCost() {
+  const mode = radio('irm-mode');
+  if (mode === 'off') return { cost: 0, line: 'IRM: off' };
+  const mlogs = num('#irm-logs');
+  const mult = mode === 'premium' ? RATES.irmPremiumMultiplier : 1;
+  const cost = mlogs * RATES.irmPerMlog * mult;
+  return { cost, line: `IRM ${mode}: ${fmt(mlogs)} M logs × $${RATES.irmPerMlog}${mult > 1 ? ` × ${mult}` : ''} → $${fmt(cost)}` };
+}
+
+function dsiCost(license) {
+  if (license === 'E3' || radio('dsi-mode') === 'off') {
+    return { cost: 0, line: 'DSI: off / not available on E3' };
+  }
+  const gb = num('#dsi-gb'); const units = num('#dsi-units');
+  const cost = gb * RATES.dsiGB + units * RATES.dsiUnit;
+  return { cost, line: `DSI: ${gb} GB × $${RATES.dsiGB} + ${units} units × $${RATES.dsiUnit} → $${fmt(cost)}` };
+}
+
+function edCost(license) {
+  if (license === 'E3' || radio('ed-mode') === 'off') {
+    return { cost: 0, line: 'eDiscovery: off / not available on E3' };
+  }
+  const gb = num('#ed-gb');
+  const cost = gb * RATES.edGB;
+  return { cost, line: `eDiscovery: ${gb} GB × $${RATES.edGB} → $${fmt(cost)}` };
+}
+
+/* ---------------- E3/E5 license enforcement ---------------- */
+function enforceLicense() {
+  const lic = ($('#license') || {}).value || 'E5';
+  const isE3 = lic === 'E3';
+  const lock = (radioName, allowed) => {
+    $$(`input[name="${radioName}"]`).forEach(r => {
+      const ok = allowed.includes(r.value);
+      r.disabled = !ok;
+      if (!ok && r.checked) {
+        const fallback = $$(`input[name="${radioName}"]`).find(x => allowed.includes(x.value));
+        if (fallback) fallback.checked = true;
+      }
+    });
+  };
+  if (isE3) {
+    lock('cc-mode', ['off', 'basic']);
+    lock('dlm-mode', ['off', 'basic']);
+    lock('audit-mode', ['standard']);
+    lock('irm-mode', ['off', 'standard']);
+    lock('dsi-mode', ['off']);
+    lock('ed-mode', ['off']);
+  } else {
+    ['cc-mode','dlm-mode','audit-mode','irm-mode','dsi-mode','ed-mode'].forEach(n =>
+      $$(`input[name="${n}"]`).forEach(r => { r.disabled = false; })
+    );
+  }
+}
+
+/* ---------------- main recompute ---------------- */
+function recompute() {
+  enforceLicense();
+  applyFocusFilter();
+  const lic = ($('#license') || {}).value || 'E5';
   const zones = readZones();
 
-  const cc = ccCost(zones, readChecked('cc-tier'), parseFloat($('#cc-sampling').value)||0, readZoneCheckboxes('cc-zone'));
-  const dlm = dlmCost(zones, readChecked('dlm-tier'), parseInt($('#dlm-retention').value)||1, readZoneCheckboxes('dlm-zone'));
-  const cp = cpCost(zones, readChecked('cp-tier'), parseFloat($('#cp-coverage').value)||0);
-  const audit = auditCost(zones, readChecked('audit-tier'));
-  const irm = irmCost(readChecked('irm-tier'), parseFloat($('#irm-logs').value)||0);
-  const dsi = dsiCost(readChecked('dsi-tier'), parseFloat($('#dsi-gb').value)||0, parseFloat($('#dsi-units').value)||0);
-  const ed = edCost(readChecked('ed-tier'), parseFloat($('#ed-gb').value)||0);
+  const cc = ccCost(zones, lic);
+  const dlm = dlmCost(zones, lic);
+  const cp = cpCost(zones);
+  const audit = auditCost(zones, lic);
+  const irm = irmCost();
+  const dsi = dsiCost(lic);
+  const ed = edCost(lic);
 
-  $('#cc-meter').textContent = cc.note;
-  $('#dlm-meter').textContent = dlm.note;
-  $('#cp-meter').textContent = cp.note;
-  $('#audit-meter').textContent = audit.note;
-  $('#irm-meter').textContent = irm.note;
-  $('#dsi-meter').textContent = dsi.note;
-  $('#ed-meter').textContent = ed.note;
+  $('#cc-meter').textContent = cc.line;
+  $('#dlm-meter').textContent = dlm.line;
+  $('#cp-meter').textContent = cp.line;
+  $('#audit-meter').textContent = audit.line;
+  $('#irm-meter').textContent = irm.line;
+  $('#dsi-meter').textContent = dsi.line;
+  $('#ed-meter').textContent = ed.line;
 
-  // PAYG total excludes eDiscovery (kept separate per snapshot convention)
   const payg = cc.cost + dlm.cost + cp.cost + audit.cost + irm.cost + dsi.cost;
   $('#total-payg').textContent = fmt(payg);
   $('#total-ed').textContent = fmt(ed.cost);
 
-  // derivation drawer
-  const items = [
-    ['Communications Compliance', cc.cost],
-    ['Data Lifecycle Management', dlm.cost],
-    ['Collection Policies (AI sites)', cp.cost],
-    ['Audit', audit.cost],
-    ['Insider Risk Management', irm.cost],
-    ['Data Security Investigations', dsi.cost],
-    ['eDiscovery Premium (separate)', ed.cost]
-  ];
-  const ul = $('#deriv-list');
-  ul.innerHTML = '';
-  for (const [name, cost] of items) {
+  const list = $('#deriv-list');
+  list.innerHTML = '';
+  [cc, dlm, cp, audit, irm, dsi, ed].forEach(r => {
     const li = document.createElement('li');
-    li.textContent = `${name}: ${fmt(cost)}`;
-    ul.appendChild(li);
-  }
+    li.textContent = r.line;
+    list.appendChild(li);
+  });
 }
 
-// -------- wiring --------
+/* ---------------- wiring ---------------- */
 function wire() {
-  document.addEventListener('input', recompute);
-  document.addEventListener('change', recompute);
+  const inputs = $$('input, select');
+  inputs.forEach(el => {
+    el.addEventListener('input', recompute);
+    el.addEventListener('change', recompute);
+  });
   $('#reveal-btn').addEventListener('click', () => {
     const d = $('#drawer');
-    const hidden = d.hasAttribute('hidden');
-    if (hidden) {
-      d.removeAttribute('hidden');
-      $('#reveal-btn').textContent = 'Hide derivation ▴';
-    } else {
-      d.setAttribute('hidden','');
-      $('#reveal-btn').textContent = 'Show derivation ▾';
-    }
+    const open = !d.hasAttribute('hidden');
+    if (open) d.setAttribute('hidden', '');
+    else d.removeAttribute('hidden');
+    $('#reveal-btn').textContent = open ? 'Show derivations' : 'Hide derivations';
   });
   recompute();
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', wire);
-} else {
-  wire();
-}
+document.addEventListener('DOMContentLoaded', wire);
