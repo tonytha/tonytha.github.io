@@ -1,443 +1,345 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Microsoft Purview AI — PAYG Calculator</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Microsoft Purview AI - PAYG Cost Calculator</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="page-header">
-    <div class="title-row">
-      <h1>Microsoft Purview AI <span class="muted">— PAYG Calculator</span></h1>
-      <span class="ai-badge">AI-generated · directional</span>
-    </div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <h1>Microsoft Purview AI <span class="brand-accent">PAYG Cost Calculator</span></h1>
     <p class="subtitle">
-      Estimate monthly Pay-As-You-Go (PAYG) cost for Purview AI capabilities the way customers actually
-      set them up — pick a <strong>user size</strong> and a <strong>usage intensity</strong> per AI workload,
-      then choose which Purview capabilities are in scope. Inspired by the
-      <a href="https://refactored-enigma-l1ygz9q.pages.github.io" target="_blank" rel="noopener">reference calculator</a>;
-      rates are illustrative — confirm against the official Microsoft pricing page.
+      Estimate your monthly Pay-As-You-Go bill for Purview AI compliance.
+      <strong>Microsoft 365 Copilot interactions are free across all PAYG capabilities</strong> &mdash;
+      you only pay for non-M365 Microsoft Copilots, Enterprise AI apps, and Other (consumer) AI apps.
     </p>
-  </header>
-
-  <main>
-    <!-- TENANT CONTEXT -->
-    <section class="card" aria-labelledby="tenant-h">
-      <h2 id="tenant-h">1 · Tenant context</h2>
-      <p class="muted hint" style="margin-top:-4px">
-        License determines which Premium meters are unlocked. Seats is informational only — actual
-        billing is driven by AI interaction volume below.
-      </p>
-      <div class="grid-2">
-        <label class="field">
-          <span>Microsoft 365 license</span>
-          <select id="license">
-            <option value="E5" selected>E5 (unlocks Premium meters)</option>
-            <option value="E3">E3 (Standard / Basic only)</option>
-          </select>
-          <p class="hint">E3 falls back to Basic CC ($0), Standard Audit, Standard IRM, no DSI/eDiscovery PAYG.</p>
-        </label>
-        <label class="field">
-          <span>Total seats <span class="muted">(informational)</span></span>
-          <input type="number" id="seats" min="0" value="1000" />
-          <p class="hint">Reference only — does not change cost.</p>
-        </label>
-      </div>
-    </section>
-
-    <!-- ACTIVITY ZONES -->
-    <section class="card" aria-labelledby="zones-h">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:8px;">
-        <div>
-          <h2 id="zones-h" style="margin:0">2 · Workloads &amp; estimated usage</h2>
-          <p class="muted hint" style="margin:4px 0 0 0">
-            Customers configure Purview policies <em>per AI workload</em>. For each workload below, pick the
-            user size and usage intensity — monthly message volume is derived from <code>users × intensity</code>.
-          </p>
-        </div>
-        <label class="field" style="min-width:220px">
-          <span>Focus</span>
-          <select id="focus">
-            <option value="all" selected>All workloads</option>
-            <option value="z1">Microsoft Copilots only</option>
-            <option value="z2">Custom Agents only</option>
-            <option value="z3">3rd-Party AI only</option>
-          </select>
-          <p class="hint">Filters which workloads contribute to cost.</p>
-        </label>
-      </div>
-
-      <div class="zone-grid">
-        <!-- Card 1: Microsoft Copilots (1st Party) -->
-        <article class="zone-card" data-zone-group="z1">
-          <header class="zone-card-head">
-            <span class="zone-card-icon zone-card-icon--blue" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            </span>
-            <h3>Microsoft Copilots <span class="zone-card-tag">(1st Party)</span></h3>
-          </header>
-          <div class="zone-card-body">
-            <!-- Z1A nested: free banner only (no input) -->
-            <div class="zone" data-zone="z1a">
-              <div class="zone-block zone-block--free">
-                <div class="zone-block-head">
-                  <span class="zone-block-title">M365 Copilot (Word, Excel, Teams…)</span>
-                  <span class="pill pill-free">Free / Included</span>
-                </div>
-                <p class="zone-block-hint">
-                  Bundled with the M365 Copilot SKU — does not add to PAYG. Sized below is the
-                  <strong>billable</strong> Microsoft Copilot family (Fabric, Security, Sales, Service, Studio).
-                </p>
-              </div>
-            </div>
-            <!-- Z1B nested: workload sizing -->
-            <div class="zone" data-zone="z1b">
-              <p class="zone-sub">
-                Billable Microsoft Copilots — Fabric, Security, Sales, Service, Studio.
-                Charged for CC + DLM when in scope.
-              </p>
-              <div class="workload-input">
-                <div class="wl-row">
-                  <span class="wl-row-label">Users</span>
-                  <div class="chip-row" data-target="z1b-users" data-workload="z1b">
-                    <button type="button" class="chip" data-val="100">Small <em>100</em></button>
-                    <button type="button" class="chip active" data-val="1000">Medium <em>1K</em></button>
-                    <button type="button" class="chip" data-val="10000">Large <em>10K</em></button>
-                    <button type="button" class="chip" data-val="50000">XL <em>50K</em></button>
-                  </div>
-                </div>
-                <div class="wl-row">
-                  <span class="wl-row-label">Intensity</span>
-                  <div class="chip-row" data-target="z1b-intensity" data-workload="z1b">
-                    <button type="button" class="chip" data-val="10">Low <em>10/user</em></button>
-                    <button type="button" class="chip active" data-val="100">Medium <em>100/user</em></button>
-                    <button type="button" class="chip" data-val="500">Heavy <em>500/user</em></button>
-                  </div>
-                </div>
-                <input type="hidden" id="z1b-users" value="1000" />
-                <input type="hidden" id="z1b-intensity" value="100" />
-                <input type="hidden" id="z1b-msgs" value="100000" />
-                <p class="workload-derived">
-                  ≈ <span class="workload-derived-num" id="z1b-msgs-display">100,000</span> messages / month
-                </p>
-              </div>
-              <div class="pill-row">
-                <span class="pill pill-needed">Needed: CC · DLM</span>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <!-- Card 2: Custom Agents (2nd Party) -->
-        <article class="zone-card" data-zone-group="z2">
-          <header class="zone-card-head">
-            <span class="zone-card-icon zone-card-icon--violet" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            </span>
-            <h3>Custom Agents <span class="zone-card-tag">(2nd Party)</span></h3>
-          </header>
-          <div class="zone-card-body">
-            <div class="zone" data-zone="z2">
-              <p class="zone-sub">
-                Custom agents built via Microsoft Foundry, Copilot Studio, etc.
-                Charged for CC + DLM when in scope.
-              </p>
-              <div class="workload-input">
-                <div class="wl-row">
-                  <span class="wl-row-label">Users</span>
-                  <div class="chip-row" data-target="z2-users" data-workload="z2">
-                    <button type="button" class="chip" data-val="100">Small <em>100</em></button>
-                    <button type="button" class="chip active" data-val="1000">Medium <em>1K</em></button>
-                    <button type="button" class="chip" data-val="10000">Large <em>10K</em></button>
-                    <button type="button" class="chip" data-val="50000">XL <em>50K</em></button>
-                  </div>
-                </div>
-                <div class="wl-row">
-                  <span class="wl-row-label">Intensity</span>
-                  <div class="chip-row" data-target="z2-intensity" data-workload="z2">
-                    <button type="button" class="chip" data-val="10">Low <em>10/user</em></button>
-                    <button type="button" class="chip active" data-val="100">Medium <em>100/user</em></button>
-                    <button type="button" class="chip" data-val="500">Heavy <em>500/user</em></button>
-                  </div>
-                </div>
-                <input type="hidden" id="z2-users" value="1000" />
-                <input type="hidden" id="z2-intensity" value="100" />
-                <input type="hidden" id="z2-msgs" value="100000" />
-                <p class="workload-derived">
-                  ≈ <span class="workload-derived-num" id="z2-msgs-display">100,000</span> messages / month
-                </p>
-              </div>
-              <div class="pill-row">
-                <span class="pill pill-needed">Needed: CC · DLM</span>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <!-- Card 3: 3rd Party AI apps -->
-        <article class="zone-card" data-zone-group="z3">
-          <header class="zone-card-head">
-            <span class="zone-card-icon zone-card-icon--amber" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a13 13 0 010 18"/><path d="M12 3a13 13 0 000 18"/></svg>
-            </span>
-            <h3>3rd Party AI apps</h3>
-          </header>
-          <div class="zone-card-body">
-            <div class="zone" data-zone="z3">
-              <p class="zone-sub">
-                ChatGPT, Claude, Gemini, shadow AI &amp; other AI sites accessed via Edge.
-                Adds CP + Audit on top of CC/DLM.
-              </p>
-              <div class="workload-input">
-                <div class="wl-row">
-                  <span class="wl-row-label">Users</span>
-                  <div class="chip-row" data-target="z3-users" data-workload="z3">
-                    <button type="button" class="chip" data-val="100">Small <em>100</em></button>
-                    <button type="button" class="chip active" data-val="1000">Medium <em>1K</em></button>
-                    <button type="button" class="chip" data-val="10000">Large <em>10K</em></button>
-                    <button type="button" class="chip" data-val="50000">XL <em>50K</em></button>
-                  </div>
-                </div>
-                <div class="wl-row">
-                  <span class="wl-row-label">Intensity</span>
-                  <div class="chip-row" data-target="z3-intensity" data-workload="z3">
-                    <button type="button" class="chip" data-val="10">Low <em>10/user</em></button>
-                    <button type="button" class="chip active" data-val="100">Medium <em>100/user</em></button>
-                    <button type="button" class="chip" data-val="500">Heavy <em>500/user</em></button>
-                  </div>
-                </div>
-                <input type="hidden" id="z3-users" value="1000" />
-                <input type="hidden" id="z3-intensity" value="100" />
-                <input type="hidden" id="z3-msgs" value="100000" />
-                <p class="workload-derived">
-                  ≈ <span class="workload-derived-num" id="z3-msgs-display">100,000</span> messages / month
-                </p>
-              </div>
-              <div class="pill-row">
-                <span class="pill pill-needed">Needed: CC · DLM · CP · Audit</span>
-              </div>
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <!-- CAPABILITIES -->
-    <section class="card" aria-labelledby="cap-h">
-      <h2 id="cap-h">3 · Purview capabilities</h2>
-      <p class="muted hint" style="margin-top:-4px">
-        Configured globally and applied across the workloads above. Knobs mirror what an admin
-        configures in the Purview portal — not low-level metering inputs like SIT counts or character limits.
-      </p>
-
-      <!-- COMMUNICATION COMPLIANCE -->
-      <div class="cap" id="cap-cc">
-        <div class="cap-head">
-          <h3>Communication Compliance</h3>
-          <div class="cap-controls">
-            <label><input type="radio" name="cc-mode" value="off" /> Off</label>
-            <label><input type="radio" name="cc-mode" value="basic" /> Basic <span class="muted">($0)</span></label>
-            <label><input type="radio" name="cc-mode" value="premium" checked /> Premium</label>
-          </div>
-        </div>
-        <div class="cap-body">
-          <div class="grid-2">
-            <label class="field">
-              <span>Sampling %</span>
-              <input type="number" id="cc-sampling" min="0" max="100" value="20" />
-              <p class="hint">% of in-scope messages sampled by CC policy.</p>
-            </label>
-            <div class="field">
-              <span>Workloads in scope</span>
-              <div class="checkbox-grid">
-                <label><input type="checkbox" class="cc-scope" value="z1b" checked /> Microsoft Copilots</label>
-                <label><input type="checkbox" class="cc-scope" value="z2" checked /> Custom Agents</label>
-                <label><input type="checkbox" class="cc-scope" value="z3" checked /> 3rd-Party AI</label>
-              </div>
-              <p class="hint">CC scopes which workloads it inspects.</p>
-            </div>
-          </div>
-          <p class="meter-line" id="cc-meter">—</p>
-        </div>
-      </div>
-
-      <!-- DATA LIFECYCLE MGMT -->
-      <div class="cap" id="cap-dlm">
-        <div class="cap-head">
-          <h3>Data Lifecycle Management</h3>
-          <div class="cap-controls">
-            <label><input type="radio" name="dlm-mode" value="off" /> Off</label>
-            <label><input type="radio" name="dlm-mode" value="basic" /> Basic</label>
-            <label><input type="radio" name="dlm-mode" value="premium" checked /> Premium</label>
-          </div>
-        </div>
-        <div class="cap-body">
-          <div class="grid-2">
-            <label class="field">
-              <span>Retention years</span>
-              <input type="number" id="dlm-retention" min="0" max="10" value="3" />
-              <p class="hint">Volume × years drives DLM PAYG.</p>
-            </label>
-            <div class="field">
-              <span>Workloads in scope</span>
-              <div class="checkbox-grid">
-                <label><input type="checkbox" class="dlm-scope" value="z1b" checked /> Microsoft Copilots</label>
-                <label><input type="checkbox" class="dlm-scope" value="z2" checked /> Custom Agents</label>
-                <label><input type="checkbox" class="dlm-scope" value="z3" checked /> 3rd-Party AI</label>
-              </div>
-            </div>
-          </div>
-          <p class="meter-line" id="dlm-meter">—</p>
-        </div>
-      </div>
-
-      <!-- COLLECTION POLICIES -->
-      <div class="cap" id="cap-cp">
-        <div class="cap-head">
-          <h3>Collection Policies <span class="muted">(3rd-Party AI only)</span></h3>
-          <div class="cap-controls">
-            <label><input type="radio" name="cp-mode" value="off" /> Off</label>
-            <label><input type="radio" name="cp-mode" value="on" checked /> On</label>
-          </div>
-        </div>
-        <div class="cap-body">
-          <label class="field">
-            <span>Coverage % of Z3 traffic</span>
-            <input type="number" id="cp-coverage" min="0" max="100" value="100" />
-            <p class="hint">% of Z3 (3rd-party) interactions captured by CP.</p>
-          </label>
-          <p class="meter-line" id="cp-meter">—</p>
-        </div>
-      </div>
-
-      <!-- AUDIT -->
-      <div class="cap" id="cap-audit">
-        <div class="cap-head">
-          <h3>Audit <span class="muted">(Z3 billable)</span></h3>
-          <div class="cap-controls">
-            <label><input type="radio" name="audit-mode" value="standard" /> Standard</label>
-            <label><input type="radio" name="audit-mode" value="premium" checked /> Premium</label>
-          </div>
-        </div>
-        <div class="cap-body">
-          <p class="hint" style="margin:0">
-            Audit records for Z3 are PAYG. Z1B/Z2 audit are bundled in M365 Audit allowance.
-          </p>
-          <p class="meter-line" id="audit-meter">—</p>
-        </div>
-      </div>
-
-      <!-- IRM -->
-      <div class="cap" id="cap-irm">
-        <div class="cap-head">
-          <h3>Insider Risk Management</h3>
-          <div class="cap-controls">
-            <label><input type="radio" name="irm-mode" value="off" /> Off</label>
-            <label><input type="radio" name="irm-mode" value="standard" /> Standard</label>
-            <label><input type="radio" name="irm-mode" value="premium" checked /> Premium</label>
-          </div>
-        </div>
-        <div class="cap-body">
-          <label class="field">
-            <span>Monthly log volume <span class="muted">(M logs)</span></span>
-            <input type="number" id="irm-logs" min="0" step="0.1" value="5" />
-            <p class="hint">IRM PAYG is purely log-volume based. Indicator count does not affect billing.</p>
-          </label>
-          <p class="meter-line" id="irm-meter">—</p>
-        </div>
-      </div>
-
-      <!-- DSI -->
-      <div class="cap" id="cap-dsi">
-        <div class="cap-head">
-          <h3>Data Security Investigations <span class="muted">(E5 only)</span></h3>
-          <div class="cap-controls">
-            <label><input type="radio" name="dsi-mode" value="off" /> Off</label>
-            <label><input type="radio" name="dsi-mode" value="on" checked /> On</label>
-          </div>
-        </div>
-        <div class="cap-body">
-          <div class="grid-2">
-            <label class="field">
-              <span>Storage GB</span>
-              <input type="number" id="dsi-gb" min="0" value="20" />
-            </label>
-            <label class="field">
-              <span>Compute units</span>
-              <input type="number" id="dsi-units" min="0" value="10" />
-            </label>
-          </div>
-          <p class="meter-line" id="dsi-meter">—</p>
-        </div>
-      </div>
-
-      <!-- EDISCOVERY -->
-      <div class="cap" id="cap-ed">
-        <div class="cap-head">
-          <h3>eDiscovery Premium <span class="muted">(E5 only)</span></h3>
-          <div class="cap-controls">
-            <label><input type="radio" name="ed-mode" value="off" /> Off</label>
-            <label><input type="radio" name="ed-mode" value="on" checked /> On</label>
-          </div>
-        </div>
-        <div class="cap-body">
-          <label class="field">
-            <span>Review-set GB / month</span>
-            <input type="number" id="ed-gb" min="0" value="50" />
-          </label>
-          <p class="meter-line" id="ed-meter">—</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- METHODOLOGY -->
-    <section class="card" aria-labelledby="meth-h">
-      <h2 id="meth-h">4 · Methodology &amp; assumed rates</h2>
-      <table class="meters">
-        <thead>
-          <tr><th>Meter</th><th>Driver</th><th>Rate (illustrative)</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>CC Premium</td><td>Σ(scope zones) × sampling%</td><td>$0.50 / 1k records (× 2.5 records/msg)</td></tr>
-          <tr><td>DLM Premium</td><td>Σ(scope zones) × retention years</td><td>$6.00 / M msg-years</td></tr>
-          <tr><td>Collection Policies</td><td>Z3 × coverage%</td><td>$0.50 / 10k requests (× 2.5 req/msg)</td></tr>
-          <tr><td>Audit Premium (Z3)</td><td>Z3 messages × 1.5 records</td><td>$15.00 / M records</td></tr>
-          <tr><td>IRM</td><td>Log volume (independent)</td><td>$1.00 / M logs (Premium ×2.0)</td></tr>
-          <tr><td>DSI</td><td>GB + compute units</td><td>$5.00 / GB and $5.00 / unit</td></tr>
-          <tr><td>eDiscovery Premium</td><td>Review-set GB</td><td>$20.00 / GB</td></tr>
-        </tbody>
-      </table>
-    </section>
-  </main>
-
-  <!-- STICKY TOTAL -->
-  <div class="totalbar" role="status" aria-live="polite">
-    <div class="total-left">
-      <strong>Estimated monthly Purview AI PAYG</strong>
-      <span class="muted">Excludes baseline M365 / Purview SKU costs.</span>
-    </div>
-    <button class="reveal" id="reveal-btn" type="button">Show derivations</button>
-    <div class="total-right">
-      <div class="total-main">$<span id="total-payg">0.00</span> <small>/ mo</small></div>
-      <div class="total-sub">+ eDiscovery: $<span id="total-ed">0.00</span> / mo</div>
+    <div class="license-toggle">
+      <label for="license"><strong>Your Microsoft 365 plan:</strong></label>
+      <select id="license">
+        <option value="e5" selected>E5 (full Purview suite)</option>
+        <option value="e3">E3 (limited &mdash; some caps disabled)</option>
+      </select>
     </div>
   </div>
+</header>
 
-  <aside class="drawer" id="drawer" hidden>
-    <h3>Derivation ledger</h3>
+<main>
+
+  <!-- Section 1: Workloads -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">1</span>
+      <h2>Your AI workloads</h2>
+      <p class="step-desc">Three Microsoft buckets. Toggle each one in or out, set your user count, and pick a usage persona.</p>
+    </div>
+
+    <div class="zones">
+
+      <!-- Microsoft Copilot experiences -->
+      <article class="zone-card" data-zone-card="z1b">
+        <header class="zone-head">
+          <div class="zone-title-row">
+            <h3>Microsoft Copilot experiences</h3>
+            <span class="free-badge">Free for all caps*</span>
+          </div>
+          <label class="include-toggle">
+            <input type="checkbox" data-include checked>
+            <span>Include in estimate</span>
+          </label>
+        </header>
+        <p class="zone-sub">M365 Copilot, Copilot for Security, Copilot in Fabric, Copilot Studio. *Non-M365 Copilots incur PAYG only for Communication Compliance &amp; DLM.</p>
+        <div class="zone-controls">
+          <label class="users-field">
+            <span>Active users</span>
+            <input type="number" data-users="z1b" value="10000" min="0" step="100">
+          </label>
+          <fieldset class="persona-field">
+            <legend>Usage intensity</legend>
+            <label><input type="radio" name="persona-z1b" value="light"> Light <small>(5/day)</small></label>
+            <label><input type="radio" name="persona-z1b" value="typical" checked> Typical <small>(20/day)</small></label>
+            <label><input type="radio" name="persona-z1b" value="heavy"> Heavy <small>(60/day)</small></label>
+          </fieldset>
+        </div>
+        <div class="zone-derived">
+          Derived volume: <span data-derived="z1b" class="derived-num">&mdash;</span>
+        </div>
+        <input type="hidden" id="z1b-msgs" data-zone="z1b" value="0">
+      </article>
+
+      <!-- Enterprise AI apps -->
+      <article class="zone-card" data-zone-card="z2">
+        <header class="zone-head">
+          <div class="zone-title-row">
+            <h3>Enterprise AI apps</h3>
+            <span class="paid-badge">PAYG</span>
+          </div>
+          <label class="include-toggle">
+            <input type="checkbox" data-include>
+            <span>Include in estimate</span>
+          </label>
+        </header>
+        <p class="zone-sub">Entra-registered enterprise AI: ChatGPT Enterprise, Anthropic Claude Enterprise, Azure AI Foundry custom apps. Charged for all enabled capabilities.</p>
+        <div class="zone-controls">
+          <label class="users-field">
+            <span>Active users</span>
+            <input type="number" data-users="z2" value="1000" min="0" step="100">
+          </label>
+          <fieldset class="persona-field">
+            <legend>Usage intensity</legend>
+            <label><input type="radio" name="persona-z2" value="light"> Light <small>(5/day)</small></label>
+            <label><input type="radio" name="persona-z2" value="typical" checked> Typical <small>(20/day)</small></label>
+            <label><input type="radio" name="persona-z2" value="heavy"> Heavy <small>(60/day)</small></label>
+          </fieldset>
+        </div>
+        <div class="zone-derived">
+          Derived volume: <span data-derived="z2" class="derived-num">&mdash;</span>
+        </div>
+        <input type="hidden" id="z2-msgs" data-zone="z2" value="0">
+      </article>
+
+      <!-- Other AI apps -->
+      <article class="zone-card" data-zone-card="z3">
+        <header class="zone-head">
+          <div class="zone-title-row">
+            <h3>Other AI apps</h3>
+            <span class="paid-badge">PAYG</span>
+          </div>
+          <label class="include-toggle">
+            <input type="checkbox" data-include>
+            <span>Include in estimate</span>
+          </label>
+        </header>
+        <p class="zone-sub">Consumer / 3rd-party AI accessed via Edge or Defender for Cloud Apps: ChatGPT consumer, Gemini, DeepSeek, Perplexity, Claude.ai. Charged for all enabled capabilities.</p>
+        <div class="zone-controls">
+          <label class="users-field">
+            <span>Active users</span>
+            <input type="number" data-users="z3" value="1000" min="0" step="100">
+          </label>
+          <fieldset class="persona-field">
+            <legend>Usage intensity</legend>
+            <label><input type="radio" name="persona-z3" value="light"> Light <small>(5/day)</small></label>
+            <label><input type="radio" name="persona-z3" value="typical" checked> Typical <small>(20/day)</small></label>
+            <label><input type="radio" name="persona-z3" value="heavy"> Heavy <small>(60/day)</small></label>
+          </fieldset>
+        </div>
+        <div class="zone-derived">
+          Derived volume: <span data-derived="z3" class="derived-num">&mdash;</span>
+        </div>
+        <input type="hidden" id="z3-msgs" data-zone="z3" value="0">
+      </article>
+
+    </div>
+  </section>
+
+  <!-- Section 2: Compliance posture -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">2</span>
+      <h2>Compliance posture</h2>
+      <p class="step-desc">Pick a preset that matches your organization. You can fine-tune individual capabilities below.</p>
+    </div>
+
+    <div class="posture-row">
+      <button type="button" class="posture-chip" data-posture="audit-only">
+        <strong>Audit-only</strong>
+        <small>Just keep records. Lowest cost.</small>
+      </button>
+      <button type="button" class="posture-chip active" data-posture="standard">
+        <strong>Standard</strong>
+        <small>Audit + CC Standard + DLM. Balanced.</small>
+      </button>
+      <button type="button" class="posture-chip" data-posture="comprehensive">
+        <strong>Comprehensive</strong>
+        <small>Everything on, full investigation stack.</small>
+      </button>
+    </div>
+  </section>
+
+  <!-- Section 3: Capabilities -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-num">3</span>
+      <h2>Tune individual capabilities</h2>
+      <p class="step-desc">Each card shows what it costs and lets you scope it to specific workloads.</p>
+    </div>
+
+    <div class="caps">
+
+      <!-- Communication Compliance -->
+      <article class="cap-card">
+        <header class="cap-head">
+          <h3>Communication Compliance</h3>
+          <div class="chip-display">Cost: <span id="chip-cc" class="cap-chip">$0.00</span>/mo</div>
+        </header>
+        <p class="cap-desc">Inspect AI prompts &amp; responses for risky communication. $0.30/1K (Standard) or $0.50/1K (Premium) text records. 1 message &asymp; 1 text record.</p>
+        <fieldset class="mode-field">
+          <legend>Mode</legend>
+          <label><input type="radio" name="cc-mode" value="off"> Off</label>
+          <label><input type="radio" name="cc-mode" value="standard"> Standard</label>
+          <label><input type="radio" name="cc-mode" value="premium" checked> Premium</label>
+        </fieldset>
+        <label class="num-field">
+          <span>Sampling rate (%)</span>
+          <input type="number" id="cc-sampling" value="20" min="0" max="100" step="5">
+        </label>
+        <fieldset class="scope-field">
+          <legend>Apply to workloads</legend>
+          <label><input type="checkbox" name="cc-scope" value="z1b"> Microsoft Copilot</label>
+          <label><input type="checkbox" name="cc-scope" value="z2" checked> Enterprise AI</label>
+          <label><input type="checkbox" name="cc-scope" value="z3" checked> Other AI</label>
+        </fieldset>
+      </article>
+
+      <!-- Data Lifecycle Management -->
+      <article class="cap-card">
+        <header class="cap-head">
+          <h3>Data Lifecycle Management</h3>
+          <div class="chip-display">Cost: <span id="chip-dlm" class="cap-chip">$0.00</span>/mo</div>
+        </header>
+        <p class="cap-desc">Retain &amp; dispose of AI prompts/responses. <strong>Free in preview.</strong> Future GA pricing TBD.</p>
+        <fieldset class="mode-field">
+          <legend>Mode</legend>
+          <label><input type="radio" name="dlm-mode" value="off"> Off</label>
+          <label><input type="radio" name="dlm-mode" value="basic"> Basic (built-in)</label>
+          <label><input type="radio" name="dlm-mode" value="premium" checked> Premium</label>
+        </fieldset>
+        <label class="num-field">
+          <span>Retention (years)</span>
+          <input type="number" id="dlm-retention" value="3" min="1" max="10" step="1">
+        </label>
+        <fieldset class="scope-field">
+          <legend>Apply to workloads</legend>
+          <label><input type="checkbox" name="dlm-scope" value="z1b"> Microsoft Copilot</label>
+          <label><input type="checkbox" name="dlm-scope" value="z2" checked> Enterprise AI</label>
+          <label><input type="checkbox" name="dlm-scope" value="z3" checked> Other AI</label>
+        </fieldset>
+      </article>
+
+      <!-- Audit -->
+      <article class="cap-card">
+        <header class="cap-head">
+          <h3>Audit</h3>
+          <div class="chip-display">Cost: <span id="chip-audit" class="cap-chip">$0.00</span>/mo</div>
+        </header>
+        <p class="cap-desc">Standard Audit is included free with E5/E3. Premium charges $0.01/1K records for non-M365 AI workloads only.</p>
+        <fieldset class="mode-field">
+          <legend>Mode</legend>
+          <label><input type="radio" name="audit-mode" value="off"> Off</label>
+          <label><input type="radio" name="audit-mode" value="standard" checked> Standard (free)</label>
+          <label><input type="radio" name="audit-mode" value="premium"> Premium</label>
+        </fieldset>
+      </article>
+
+      <!-- Insider Risk Management -->
+      <article class="cap-card" data-e5-only>
+        <header class="cap-head">
+          <h3>Insider Risk Management</h3>
+          <div class="chip-display">Cost: <span id="chip-irm" class="cap-chip">$0.00</span>/mo</div>
+        </header>
+        <p class="cap-desc">Detect risky AI usage patterns. $25/10K activities (DSPU). E5-only for Premium tier. Activity volume estimated as 10% of non-M365 messages.</p>
+        <fieldset class="mode-field">
+          <legend>Mode</legend>
+          <label><input type="radio" name="irm-mode" value="off" checked> Off</label>
+          <label><input type="radio" name="irm-mode" value="standard"> Standard</label>
+          <label><input type="radio" name="irm-mode" value="premium"> Premium (E5)</label>
+        </fieldset>
+      </article>
+
+      <!-- Data Security Investigations -->
+      <article class="cap-card" data-e5-only>
+        <header class="cap-head">
+          <h3>Data Security Investigations</h3>
+          <div class="chip-display">Cost: <span id="chip-dsi" class="cap-chip">$0.00</span>/mo</div>
+        </header>
+        <p class="cap-desc">$0.16/GB-day storage + $5.00/compute-hour. E5-only. Use only for active investigations.</p>
+        <fieldset class="mode-field">
+          <legend>Mode</legend>
+          <label><input type="radio" name="dsi-mode" value="off" checked> Off</label>
+          <label><input type="radio" name="dsi-mode" value="on"> On</label>
+        </fieldset>
+        <label class="num-field">
+          <span>Storage (GB)</span>
+          <input type="number" id="dsi-gb" value="100" min="0" step="10">
+        </label>
+        <label class="num-field">
+          <span>Compute hours / mo</span>
+          <input type="number" id="dsi-units" value="20" min="0" step="1">
+        </label>
+      </article>
+
+      <!-- eDiscovery Premium -->
+      <article class="cap-card" data-e5-only>
+        <header class="cap-head">
+          <h3>eDiscovery Premium</h3>
+          <div class="chip-display">Cost: <span id="chip-ed" class="cap-chip">$0.00</span>/mo</div>
+        </header>
+        <p class="cap-desc">$0.67/GB-day for AI content under hold. E5-only. Estimate based on prompts/responses subject to legal hold.</p>
+        <fieldset class="mode-field">
+          <legend>Mode</legend>
+          <label><input type="radio" name="ed-mode" value="off" checked> Off</label>
+          <label><input type="radio" name="ed-mode" value="on"> On</label>
+        </fieldset>
+        <label class="num-field">
+          <span>Storage under hold (GB)</span>
+          <input type="number" id="ed-gb" value="50" min="0" step="10">
+        </label>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- Methodology table -->
+  <section class="step methodology">
+    <div class="step-head">
+      <span class="step-num">&#8505;</span>
+      <h2>Rates &amp; methodology</h2>
+      <p class="step-desc">Validated against Azure retail prices (prices.azure.com) and Microsoft Learn docs.</p>
+    </div>
+    <table class="rates-table">
+      <thead>
+        <tr><th>Capability</th><th>Meter</th><th>Rate</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Communication Compliance Standard</td><td>Text records</td><td>$0.30 / 1K</td><td>1 msg &asymp; 1 text record</td></tr>
+        <tr><td>Communication Compliance Premium</td><td>Text records</td><td>$0.50 / 1K</td><td>Adds advanced classifiers, Copilot summaries</td></tr>
+        <tr><td>Data Lifecycle Mgmt Premium</td><td>&mdash;</td><td>$0.00 (preview)</td><td>GA pricing TBD</td></tr>
+        <tr><td>Audit Standard</td><td>&mdash;</td><td>Included with E3/E5</td><td>Free</td></tr>
+        <tr><td>Audit Premium add-on</td><td>Audit records</td><td>$0.01 / 1K</td><td>Non-M365 AI workloads only; M365 Copilot is free</td></tr>
+        <tr><td>Insider Risk Mgmt</td><td>DSPU activities</td><td>$25.00 / 10K</td><td>~10% of non-M365 msgs trigger IRM signal</td></tr>
+        <tr><td>Data Security Investigations</td><td>GB-day + compute-hr</td><td>$0.16/GB-day + $5/hr</td><td>E5-only</td></tr>
+        <tr><td>eDiscovery Premium</td><td>GB-day</td><td>$0.67 / GB-day</td><td>E5-only</td></tr>
+      </tbody>
+    </table>
+    <p class="caveat">All prices in USD. M365 Copilot interactions are <strong>free</strong> for Audit, IRM, DSI, and eDiscovery; non-M365 Microsoft Copilots (Security, Fabric, Studio) only incur PAYG for Communication Compliance and DLM. Persona defaults: light = 5 msgs/user/day, typical = 20, heavy = 60. 22 working days/month.</p>
+  </section>
+
+</main>
+
+<!-- Sticky total -->
+<div class="sticky-total">
+  <div class="sticky-inner">
+    <div class="total-block">
+      <span class="total-label">Estimated PAYG cost</span>
+      <span id="total-payg" class="total-amount">$0.00/mo</span>
+    </div>
+    <div class="chips-row">
+      <span class="chip-line">CC: <span id="chip-cc-mirror" class="muted">&mdash;</span></span>
+      <span class="chip-line">DLM: <span class="muted">&mdash;</span></span>
+      <span class="chip-line">Audit: <span class="muted">&mdash;</span></span>
+      <span class="chip-line">IRM: <span class="muted">&mdash;</span></span>
+      <span class="chip-line">DSI: <span class="muted">&mdash;</span></span>
+      <span class="chip-line">eDisc: <span id="total-ed" class="muted">&mdash;</span></span>
+    </div>
+    <button id="reveal-btn" type="button" class="reveal-btn">Show derivations</button>
+  </div>
+  <div id="deriv-drawer" class="deriv-drawer">
     <ul id="deriv-list"></ul>
-  </aside>
+  </div>
+</div>
 
-  <footer class="page-footer">
-    <p>
-      Open source on
-      <a href="https://github.com/tonytha/tonytha.github.io" target="_blank" rel="noopener">GitHub</a>.
-      AI-generated for directional planning only — confirm rates with the official
-      <a href="https://learn.microsoft.com/purview" target="_blank" rel="noopener">Microsoft Purview pricing</a>.
-    </p>
-  </footer>
-
-  <script src="./app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
