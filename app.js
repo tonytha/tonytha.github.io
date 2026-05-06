@@ -231,15 +231,19 @@ function recompute() {
   const ed = edCost();
   const total = cc + dlm + audit + irm + dsi + ed;
   $('#total-payg').textContent = fmt(total) + '/mo';
-  $('#total-ed').textContent = fmt(ed) + '/mo';
-  // Per-cap chips
-  const setChip = (id, val) => { const el = $(id); if (el) el.textContent = fmt(val); };
-  setChip('#chip-cc', cc);
-  setChip('#chip-dlm', dlm);
-  setChip('#chip-audit', audit);
-  setChip('#chip-irm', irm);
-  setChip('#chip-dsi', dsi);
-  setChip('#chip-ed', ed);
+  // Per-cap chips: update both the cap-card chip and the sticky-total mirror
+  const setChip = (key, val) => {
+    const card = $('#chip-' + key);
+    if (card) card.textContent = fmt(val);
+    const mirror = $('#chip-' + key + '-mirror');
+    if (mirror) mirror.textContent = fmt(val) + '/mo';
+  };
+  setChip('cc', cc);
+  setChip('dlm', dlm);
+  setChip('audit', audit);
+  setChip('irm', irm);
+  setChip('dsi', dsi);
+  setChip('ed', ed);
   // Re-render derivations drawer
   const list = $('#deriv-list');
   if (list) {
