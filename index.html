@@ -1,345 +1,394 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Microsoft Purview AI - PAYG Cost Calculator</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Purview AI PAYG Cost Calculator</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- ========== STICKY HERO ========== -->
+  <header class="hero hero--sticky">
+    <div class="hero-inner">
+      <div class="hero-left">
+        <h1>Purview AI PAYG Cost Calculator</h1>
+        <p class="subtitle">
+          Estimate per-workload Microsoft Purview pay-as-you-go costs.
+          Pick users &amp; intensity per workload, then enable the policies you need.
+        </p>
+        <div class="hero-controls">
+          <div class="license-toggle" role="radiogroup" aria-label="License level">
+            <label class="lic">
+              <input type="radio" name="license" value="E5" checked>
+              <span>Microsoft 365 E5</span>
+            </label>
+            <label class="lic">
+              <input type="radio" name="license" value="E3">
+              <span>E3 / Other</span>
+            </label>
+          </div>
+          <button id="reset-btn" class="btn-secondary" type="button">Reset</button>
+        </div>
+        <p class="hero-note">
+          <strong>M365 Copilot</strong> interactions (Word/Excel/Teams/etc.) are <strong>FREE</strong> across all Purview capabilities &mdash; not included in this estimate.
+        </p>
+      </div>
+      <div class="hero-right">
+        <div class="header-total-card">
+          <div class="header-total-label">PAYG Monthly Total</div>
+          <div class="header-total-value" id="header-total">$0.00<span class="hdr-mo">/mo</span></div>
+          <div class="header-total-breakdown">
+            <div class="hdr-line"><span>Workload PAYG:</span> <span id="header-workloads">$0.00</span></div>
+            <div class="hdr-line"><span>DSI (tenant):</span> <span id="header-dsi">$0.00</span></div>
+            <div class="hdr-line hdr-sep"><span>eDiscovery (separate):</span> <span id="header-edisc">$0.00</span></div>
+            <div class="hdr-line hdr-allin"><span>All-in incl. eDiscovery:</span> <span id="header-allin">$0.00/mo</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
 
-<header class="hero">
-  <div class="hero-inner">
-    <h1>Microsoft Purview AI <span class="brand-accent">PAYG Cost Calculator</span></h1>
-    <p class="subtitle">
-      Estimate your monthly Pay-As-You-Go bill for Purview AI compliance.
-      <strong>Microsoft 365 Copilot interactions are free across all PAYG capabilities</strong> &mdash;
-      you only pay for non-M365 Microsoft Copilots, Enterprise AI apps, and Other (consumer) AI apps.
+  <main>
+    <!-- ========== SECTION 1: WORKLOAD CARDS ========== -->
+    <section class="section">
+      <div class="section-header">
+        <h2>1. Your AI workloads</h2>
+        <p class="section-sub">For each workload: include it, set users &amp; intensity, then enable the policies you need.</p>
+      </div>
+
+      <div class="workload-grid">
+
+        <!-- ---- WORKLOAD: MICROSOFT COPILOT (non-M365) ---- -->
+        <article class="wl-card" data-wl="msCopilot">
+          <header class="wl-head">
+            <label class="wl-include">
+              <input type="checkbox" class="wl-toggle" data-wl="msCopilot" checked>
+              <span class="wl-title">Microsoft Copilot</span>
+            </label>
+          </header>
+          <p class="wl-desc">
+            Non-M365 Microsoft Copilots: <strong>Fabric, Security, Sales, Service, GitHub Copilot</strong>, etc.
+            Audit is <strong>free</strong>. M365 Copilot itself is excluded (always free).
+          </p>
+
+          <div class="wl-input-row">
+            <label class="wl-field">
+              <span class="wl-field-label">Users</span>
+              <input type="number" class="wl-users" data-wl="msCopilot" value="1000" min="0" step="100">
+            </label>
+            <fieldset class="wl-intensity" data-wl="msCopilot">
+              <legend>Intensity</legend>
+              <label><input type="radio" name="int-msCopilot" value="light"> <span>Light <small>5/day</small></span></label>
+              <label><input type="radio" name="int-msCopilot" value="typical" checked> <span>Typical <small>20/day</small></span></label>
+              <label><input type="radio" name="int-msCopilot" value="heavy"> <span>Heavy <small>60/day</small></span></label>
+            </fieldset>
+          </div>
+          <div class="wl-derived">
+            Estimated volume: <strong class="wl-msgs" data-wl="msCopilot">0</strong> msgs/mo
+          </div>
+
+          <fieldset class="wl-policies" data-wl="msCopilot">
+            <legend>Policies for this workload</legend>
+            <label class="pol pol-included">
+              <input type="checkbox" data-pol="audit" checked disabled>
+              <span class="pol-name">Audit</span>
+              <span class="pol-meta tag-green">Included &mdash; $0</span>
+            </label>
+            <label class="pol">
+              <input type="checkbox" data-pol="cc">
+              <span class="pol-name">Communication Compliance</span>
+              <span class="pol-meta">$0.50 / 1K text records</span>
+            </label>
+            <label class="pol">
+              <input type="checkbox" data-pol="dlm">
+              <span class="pol-name">Data Lifecycle Management</span>
+              <span class="pol-meta">$6.00 / 1M messages</span>
+            </label>
+            <label class="pol">
+              <input type="checkbox" data-pol="irm">
+              <span class="pol-name">Insider Risk Management</span>
+              <span class="pol-meta">$25.00 / 10K activities</span>
+            </label>
+          </fieldset>
+
+          <footer class="wl-foot">
+            <span class="wl-sub-label">Workload subtotal</span>
+            <span class="wl-sub-value" id="sub-msCopilot">$0.00 /mo</span>
+          </footer>
+        </article>
+
+        <!-- ---- WORKLOAD: CUSTOM AGENTS (Foundry / Studio) ---- -->
+        <article class="wl-card" data-wl="customAgents">
+          <header class="wl-head">
+            <label class="wl-include">
+              <input type="checkbox" class="wl-toggle" data-wl="customAgents">
+              <span class="wl-title">Custom Agents</span>
+            </label>
+          </header>
+          <p class="wl-desc">
+            Azure AI <strong>Foundry</strong>, <strong>Copilot Studio</strong> agents, Copilot Connectors.
+            Audit is <strong>free</strong>; Copilot Studio audit is included.
+          </p>
+
+          <div class="wl-input-row">
+            <label class="wl-field">
+              <span class="wl-field-label">Users</span>
+              <input type="number" class="wl-users" data-wl="customAgents" value="0" min="0" step="100">
+            </label>
+            <fieldset class="wl-intensity" data-wl="customAgents">
+              <legend>Intensity</legend>
+              <label><input type="radio" name="int-customAgents" value="light"> <span>Light <small>5/day</small></span></label>
+              <label><input type="radio" name="int-customAgents" value="typical" checked> <span>Typical <small>20/day</small></span></label>
+              <label><input type="radio" name="int-customAgents" value="heavy"> <span>Heavy <small>60/day</small></span></label>
+            </fieldset>
+          </div>
+          <div class="wl-derived">
+            Estimated volume: <strong class="wl-msgs" data-wl="customAgents">0</strong> msgs/mo
+          </div>
+
+          <fieldset class="wl-policies" data-wl="customAgents">
+            <legend>Policies for this workload</legend>
+            <label class="pol pol-included">
+              <input type="checkbox" data-pol="audit" checked disabled>
+              <span class="pol-name">Audit</span>
+              <span class="pol-meta tag-green">Included &mdash; $0</span>
+            </label>
+            <label class="pol pol-included">
+              <input type="checkbox" data-pol="copilotStudio" checked disabled>
+              <span class="pol-name">Copilot Studio Audit</span>
+              <span class="pol-meta tag-green">Included &mdash; $0</span>
+            </label>
+            <label class="pol">
+              <input type="checkbox" data-pol="cc">
+              <span class="pol-name">Communication Compliance</span>
+              <span class="pol-meta">$0.50 / 1K text records</span>
+            </label>
+            <label class="pol">
+              <input type="checkbox" data-pol="dlm">
+              <span class="pol-name">Data Lifecycle Management</span>
+              <span class="pol-meta">$6.00 / 1M messages</span>
+            </label>
+            <label class="pol">
+              <input type="checkbox" data-pol="irm">
+              <span class="pol-name">Insider Risk Management</span>
+              <span class="pol-meta">$25.00 / 10K activities</span>
+            </label>
+          </fieldset>
+
+          <footer class="wl-foot">
+            <span class="wl-sub-label">Workload subtotal</span>
+            <span class="wl-sub-value" id="sub-customAgents">$0.00 /mo</span>
+          </footer>
+        </article>
+
+        <!-- ---- WORKLOAD: 3RD PARTY AI ---- -->
+        <article class="wl-card" data-wl="thirdParty">
+          <header class="wl-head">
+            <label class="wl-include">
+              <input type="checkbox" class="wl-toggle" data-wl="thirdParty">
+              <span class="wl-title">3rd Party AI</span>
+            </label>
+          </header>
+          <p class="wl-desc">
+            <strong>ChatGPT, Gemini, Claude, DeepSeek</strong> &amp; shadow AI.
+            <strong>Audit + Collection Policies are required</strong> to even detect &amp; route these messages.
+          </p>
+
+          <div class="wl-input-row">
+            <label class="wl-field">
+              <span class="wl-field-label">Users</span>
+              <input type="number" class="wl-users" data-wl="thirdParty" value="0" min="0" step="100">
+            </label>
+            <fieldset class="wl-intensity" data-wl="thirdParty">
+              <legend>Intensity</legend>
+              <label><input type="radio" name="int-thirdParty" value="light"> <span>Light <small>5/day</small></span></label>
+              <label><input type="radio" name="int-thirdParty" value="typical" checked> <span>Typical <small>20/day</small></span></label>
+              <label><input type="radio" name="int-thirdParty" value="heavy"> <span>Heavy <small>60/day</small></span></label>
+            </fieldset>
+          </div>
+          <div class="wl-derived">
+            Estimated volume: <strong class="wl-msgs" data-wl="thirdParty">0</strong> msgs/mo
+          </div>
+
+          <fieldset class="wl-policies" data-wl="thirdParty">
+            <legend>Policies for this workload</legend>
+            <label class="pol pol-required">
+              <input type="checkbox" data-pol="audit" checked disabled>
+              <span class="pol-name">Audit (required)</span>
+              <span class="pol-meta">$15.00 / 1M records</span>
+            </label>
+            <label class="pol pol-required">
+              <input type="checkbox" data-pol="collection" checked disabled>
+              <span class="pol-name">Collection Policies (required)</span>
+              <span class="pol-meta">$0.50 / 10K requests</span>
+            </label>
+            <label class="pol pol-included">
+              <input type="checkbox" data-pol="endpointDlp" checked disabled>
+              <span class="pol-name">Endpoint DLP</span>
+              <span class="pol-meta tag-green">$0 with E5</span>
+            </label>
+            <label class="pol">
+              <input type="checkbox" data-pol="cc">
+              <span class="pol-name">Communication Compliance</span>
+              <span class="pol-meta">$0.50 / 1K text records</span>
+            </label>
+            <label class="pol">
+              <input type="checkbox" data-pol="dlm">
+              <span class="pol-name">Data Lifecycle Management</span>
+              <span class="pol-meta">$6.00 / 1M messages</span>
+            </label>
+            <label class="pol">
+              <input type="checkbox" data-pol="irm">
+              <span class="pol-name">Insider Risk Management</span>
+              <span class="pol-meta">$25.00 / 10K activities</span>
+            </label>
+          </fieldset>
+
+          <footer class="wl-foot">
+            <span class="wl-sub-label">Workload subtotal</span>
+            <span class="wl-sub-value" id="sub-thirdParty">$0.00 /mo</span>
+          </footer>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ========== SECTION 2: TENANT-WIDE ========== -->
+    <section class="section">
+      <div class="section-header">
+        <h2>2. Tenant-wide capabilities</h2>
+        <p class="section-sub">DSI is added to your PAYG total. eDiscovery Premium is shown separately.</p>
+      </div>
+
+      <div class="tenant-grid">
+
+        <article class="tenant-card" data-tn="dsi">
+          <header class="tn-head">
+            <label class="wl-include">
+              <input type="checkbox" class="tn-toggle" data-tn="dsi">
+              <span class="wl-title">Data Security Investigations (DSI)</span>
+            </label>
+          </header>
+          <p class="wl-desc">Forensic investigations on emails, files &amp; chats. PAYG &mdash; rolled into your PAYG total.</p>
+          <div class="tn-input-row">
+            <label class="wl-field">
+              <span class="wl-field-label">Storage (GB)</span>
+              <input type="number" id="dsi-gb" value="0" min="0" step="10">
+              <small>$5.00 / GB-month</small>
+            </label>
+            <label class="wl-field">
+              <span class="wl-field-label">AI Compute Units</span>
+              <input type="number" id="dsi-units" value="0" min="0" step="1">
+              <small>$5.00 / unit</small>
+            </label>
+          </div>
+          <footer class="wl-foot">
+            <span class="wl-sub-label">DSI subtotal</span>
+            <span class="wl-sub-value" id="sub-dsi">$0.00 /mo</span>
+          </footer>
+        </article>
+
+        <article class="tenant-card" data-tn="edisc">
+          <header class="tn-head">
+            <label class="wl-include">
+              <input type="checkbox" class="tn-toggle" data-tn="edisc">
+              <span class="wl-title">eDiscovery Premium</span>
+            </label>
+            <span class="wl-tag tag-grey">Separate from PAYG</span>
+          </header>
+          <p class="wl-desc">Review-set storage. Shown separately from PAYG subtotal (admin/legal budget line).</p>
+          <div class="tn-input-row">
+            <label class="wl-field">
+              <span class="wl-field-label">Review-set storage (GB)</span>
+              <input type="number" id="edisc-gb" value="0" min="0" step="10">
+              <small>$20.00 / GB-month</small>
+            </label>
+          </div>
+          <footer class="wl-foot">
+            <span class="wl-sub-label">eDiscovery subtotal</span>
+            <span class="wl-sub-value" id="sub-edisc">$0.00 /mo</span>
+          </footer>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ========== SECTION 3: COST DRIVERS ========== -->
+    <section class="section">
+      <div class="section-header">
+        <h2>3. Cost-driver ledger</h2>
+        <p class="section-sub">Every enabled meter, the volume that drives it, and the resulting $/mo.</p>
+      </div>
+      <div class="ledger-wrap">
+        <table class="ledger" id="ledger">
+          <thead>
+            <tr>
+              <th>Workload</th>
+              <th>Capability</th>
+              <th>Volume / Inputs</th>
+              <th>Rate</th>
+              <th class="num">$ / mo</th>
+            </tr>
+          </thead>
+          <tbody id="ledger-body">
+            <tr><td colspan="5" class="ledger-empty">Enable a workload &amp; policy above to see derivations.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========== SECTION 4: METHODOLOGY ========== -->
+    <section class="section">
+      <div class="section-header">
+        <h2>4. Methodology &amp; rates</h2>
+        <p class="section-sub">Rates aligned with the published reference site &amp; cross-checked against Azure retail pricing.</p>
+      </div>
+      <div class="methodology">
+        <h3>Volume model</h3>
+        <ul>
+          <li><strong>Light</strong>: 5 messages / user / day</li>
+          <li><strong>Typical</strong>: 20 messages / user / day</li>
+          <li><strong>Heavy</strong>: 60 messages / user / day</li>
+          <li>22 working days / month</li>
+          <li>1 message &asymp; 1 text record (Comm Compliance simplification)</li>
+        </ul>
+        <h3>Per-meter unit math</h3>
+        <ul>
+          <li><strong>Communication Compliance</strong>: <code>(msgs / 1,000) &times; $0.50</code></li>
+          <li><strong>Data Lifecycle Mgmt</strong>: <code>(msgs / 1,000,000) &times; $6.00</code></li>
+          <li><strong>Insider Risk Mgmt</strong>: <code>(msgs &times; 0.10 / 10,000) &times; $25.00</code> &mdash; ~10% of msgs trigger an activity</li>
+          <li><strong>Audit (3rd party)</strong>: <code>(msgs &times; 1.5 / 1,000,000) &times; $15.00</code></li>
+          <li><strong>Collection Policies (3rd party)</strong>: <code>(msgs &times; 2.5 / 10,000) &times; $0.50</code></li>
+          <li><strong>DSI</strong>: <code>(GB &times; $5.00) + (Units &times; $5.00)</code></li>
+          <li><strong>eDiscovery Premium</strong>: <code>GB &times; $20.00</code></li>
+        </ul>
+        <h3>Rate references</h3>
+        <table class="rates-table">
+          <thead>
+            <tr><th>Capability</th><th>Rate</th><th>Source</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Audit (MS Copilot / Custom Agents)</td><td>Included $0</td><td>Reference site &amp; Microsoft Purview docs</td></tr>
+            <tr><td>Audit (3rd party)</td><td>$15.00 / 1M records</td><td>Reference site (Z3 required)</td></tr>
+            <tr><td>Communication Compliance</td><td>$0.50 / 1K text records</td><td>Reference site (Premium)</td></tr>
+            <tr><td>Data Lifecycle Management</td><td>$6.00 / 1M messages</td><td>Reference site (Premium)</td></tr>
+            <tr><td>Collection Policies</td><td>$0.50 / 10K requests</td><td>Reference site (Z3 required)</td></tr>
+            <tr><td>Endpoint DLP</td><td>$0 with E5</td><td>E5 entitlement</td></tr>
+            <tr><td>Insider Risk Management</td><td>$25.00 / 10K activities</td><td>Azure retail (Standard DSPU)</td></tr>
+            <tr><td>DSI Storage</td><td>$5.00 / GB-month</td><td>Reference site</td></tr>
+            <tr><td>DSI AI Compute</td><td>$5.00 / Compute Unit</td><td>Reference site</td></tr>
+            <tr><td>eDiscovery Premium</td><td>$20.00 / GB-month</td><td>Reference site (separate)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="footer-note">
+      Estimates only. Actual costs depend on tenant configuration, retention, message size, and Microsoft list price changes.
+      M365 Copilot interactions remain free across all Purview capabilities.
     </p>
-    <div class="license-toggle">
-      <label for="license"><strong>Your Microsoft 365 plan:</strong></label>
-      <select id="license">
-        <option value="e5" selected>E5 (full Purview suite)</option>
-        <option value="e3">E3 (limited &mdash; some caps disabled)</option>
-      </select>
-    </div>
-  </div>
-</header>
+  </main>
 
-<main>
-
-  <!-- Section 1: Workloads -->
-  <section class="step">
-    <div class="step-head">
-      <span class="step-num">1</span>
-      <h2>Your AI workloads</h2>
-      <p class="step-desc">Three Microsoft buckets. Toggle each one in or out, set your user count, and pick a usage persona.</p>
-    </div>
-
-    <div class="zones">
-
-      <!-- Microsoft Copilot experiences -->
-      <article class="zone-card" data-zone-card="z1b">
-        <header class="zone-head">
-          <div class="zone-title-row">
-            <h3>Microsoft Copilot experiences</h3>
-            <span class="free-badge">Free for all caps*</span>
-          </div>
-          <label class="include-toggle">
-            <input type="checkbox" data-include checked>
-            <span>Include in estimate</span>
-          </label>
-        </header>
-        <p class="zone-sub">M365 Copilot, Copilot for Security, Copilot in Fabric, Copilot Studio. *Non-M365 Copilots incur PAYG only for Communication Compliance &amp; DLM.</p>
-        <div class="zone-controls">
-          <label class="users-field">
-            <span>Active users</span>
-            <input type="number" data-users="z1b" value="10000" min="0" step="100">
-          </label>
-          <fieldset class="persona-field">
-            <legend>Usage intensity</legend>
-            <label><input type="radio" name="persona-z1b" value="light"> Light <small>(5/day)</small></label>
-            <label><input type="radio" name="persona-z1b" value="typical" checked> Typical <small>(20/day)</small></label>
-            <label><input type="radio" name="persona-z1b" value="heavy"> Heavy <small>(60/day)</small></label>
-          </fieldset>
-        </div>
-        <div class="zone-derived">
-          Derived volume: <span data-derived="z1b" class="derived-num">&mdash;</span>
-        </div>
-        <input type="hidden" id="z1b-msgs" data-zone="z1b" value="0">
-      </article>
-
-      <!-- Enterprise AI apps -->
-      <article class="zone-card" data-zone-card="z2">
-        <header class="zone-head">
-          <div class="zone-title-row">
-            <h3>Enterprise AI apps</h3>
-            <span class="paid-badge">PAYG</span>
-          </div>
-          <label class="include-toggle">
-            <input type="checkbox" data-include>
-            <span>Include in estimate</span>
-          </label>
-        </header>
-        <p class="zone-sub">Entra-registered enterprise AI: ChatGPT Enterprise, Anthropic Claude Enterprise, Azure AI Foundry custom apps. Charged for all enabled capabilities.</p>
-        <div class="zone-controls">
-          <label class="users-field">
-            <span>Active users</span>
-            <input type="number" data-users="z2" value="1000" min="0" step="100">
-          </label>
-          <fieldset class="persona-field">
-            <legend>Usage intensity</legend>
-            <label><input type="radio" name="persona-z2" value="light"> Light <small>(5/day)</small></label>
-            <label><input type="radio" name="persona-z2" value="typical" checked> Typical <small>(20/day)</small></label>
-            <label><input type="radio" name="persona-z2" value="heavy"> Heavy <small>(60/day)</small></label>
-          </fieldset>
-        </div>
-        <div class="zone-derived">
-          Derived volume: <span data-derived="z2" class="derived-num">&mdash;</span>
-        </div>
-        <input type="hidden" id="z2-msgs" data-zone="z2" value="0">
-      </article>
-
-      <!-- Other AI apps -->
-      <article class="zone-card" data-zone-card="z3">
-        <header class="zone-head">
-          <div class="zone-title-row">
-            <h3>Other AI apps</h3>
-            <span class="paid-badge">PAYG</span>
-          </div>
-          <label class="include-toggle">
-            <input type="checkbox" data-include>
-            <span>Include in estimate</span>
-          </label>
-        </header>
-        <p class="zone-sub">Consumer / 3rd-party AI accessed via Edge or Defender for Cloud Apps: ChatGPT consumer, Gemini, DeepSeek, Perplexity, Claude.ai. Charged for all enabled capabilities.</p>
-        <div class="zone-controls">
-          <label class="users-field">
-            <span>Active users</span>
-            <input type="number" data-users="z3" value="1000" min="0" step="100">
-          </label>
-          <fieldset class="persona-field">
-            <legend>Usage intensity</legend>
-            <label><input type="radio" name="persona-z3" value="light"> Light <small>(5/day)</small></label>
-            <label><input type="radio" name="persona-z3" value="typical" checked> Typical <small>(20/day)</small></label>
-            <label><input type="radio" name="persona-z3" value="heavy"> Heavy <small>(60/day)</small></label>
-          </fieldset>
-        </div>
-        <div class="zone-derived">
-          Derived volume: <span data-derived="z3" class="derived-num">&mdash;</span>
-        </div>
-        <input type="hidden" id="z3-msgs" data-zone="z3" value="0">
-      </article>
-
-    </div>
-  </section>
-
-  <!-- Section 2: Compliance posture -->
-  <section class="step">
-    <div class="step-head">
-      <span class="step-num">2</span>
-      <h2>Compliance posture</h2>
-      <p class="step-desc">Pick a preset that matches your organization. You can fine-tune individual capabilities below.</p>
-    </div>
-
-    <div class="posture-row">
-      <button type="button" class="posture-chip" data-posture="audit-only">
-        <strong>Audit-only</strong>
-        <small>Just keep records. Lowest cost.</small>
-      </button>
-      <button type="button" class="posture-chip active" data-posture="standard">
-        <strong>Standard</strong>
-        <small>Audit + CC Standard + DLM. Balanced.</small>
-      </button>
-      <button type="button" class="posture-chip" data-posture="comprehensive">
-        <strong>Comprehensive</strong>
-        <small>Everything on, full investigation stack.</small>
-      </button>
-    </div>
-  </section>
-
-  <!-- Section 3: Capabilities -->
-  <section class="step">
-    <div class="step-head">
-      <span class="step-num">3</span>
-      <h2>Tune individual capabilities</h2>
-      <p class="step-desc">Each card shows what it costs and lets you scope it to specific workloads.</p>
-    </div>
-
-    <div class="caps">
-
-      <!-- Communication Compliance -->
-      <article class="cap-card">
-        <header class="cap-head">
-          <h3>Communication Compliance</h3>
-          <div class="chip-display">Cost: <span id="chip-cc" class="cap-chip">$0.00</span>/mo</div>
-        </header>
-        <p class="cap-desc">Inspect AI prompts &amp; responses for risky communication. $0.30/1K (Standard) or $0.50/1K (Premium) text records. 1 message &asymp; 1 text record.</p>
-        <fieldset class="mode-field">
-          <legend>Mode</legend>
-          <label><input type="radio" name="cc-mode" value="off"> Off</label>
-          <label><input type="radio" name="cc-mode" value="standard"> Standard</label>
-          <label><input type="radio" name="cc-mode" value="premium" checked> Premium</label>
-        </fieldset>
-        <label class="num-field">
-          <span>Sampling rate (%)</span>
-          <input type="number" id="cc-sampling" value="20" min="0" max="100" step="5">
-        </label>
-        <fieldset class="scope-field">
-          <legend>Apply to workloads</legend>
-          <label><input type="checkbox" name="cc-scope" value="z1b"> Microsoft Copilot</label>
-          <label><input type="checkbox" name="cc-scope" value="z2" checked> Enterprise AI</label>
-          <label><input type="checkbox" name="cc-scope" value="z3" checked> Other AI</label>
-        </fieldset>
-      </article>
-
-      <!-- Data Lifecycle Management -->
-      <article class="cap-card">
-        <header class="cap-head">
-          <h3>Data Lifecycle Management</h3>
-          <div class="chip-display">Cost: <span id="chip-dlm" class="cap-chip">$0.00</span>/mo</div>
-        </header>
-        <p class="cap-desc">Retain &amp; dispose of AI prompts/responses. <strong>Free in preview.</strong> Future GA pricing TBD.</p>
-        <fieldset class="mode-field">
-          <legend>Mode</legend>
-          <label><input type="radio" name="dlm-mode" value="off"> Off</label>
-          <label><input type="radio" name="dlm-mode" value="basic"> Basic (built-in)</label>
-          <label><input type="radio" name="dlm-mode" value="premium" checked> Premium</label>
-        </fieldset>
-        <label class="num-field">
-          <span>Retention (years)</span>
-          <input type="number" id="dlm-retention" value="3" min="1" max="10" step="1">
-        </label>
-        <fieldset class="scope-field">
-          <legend>Apply to workloads</legend>
-          <label><input type="checkbox" name="dlm-scope" value="z1b"> Microsoft Copilot</label>
-          <label><input type="checkbox" name="dlm-scope" value="z2" checked> Enterprise AI</label>
-          <label><input type="checkbox" name="dlm-scope" value="z3" checked> Other AI</label>
-        </fieldset>
-      </article>
-
-      <!-- Audit -->
-      <article class="cap-card">
-        <header class="cap-head">
-          <h3>Audit</h3>
-          <div class="chip-display">Cost: <span id="chip-audit" class="cap-chip">$0.00</span>/mo</div>
-        </header>
-        <p class="cap-desc">Standard Audit is included free with E5/E3. Premium charges $0.01/1K records for non-M365 AI workloads only.</p>
-        <fieldset class="mode-field">
-          <legend>Mode</legend>
-          <label><input type="radio" name="audit-mode" value="off"> Off</label>
-          <label><input type="radio" name="audit-mode" value="standard" checked> Standard (free)</label>
-          <label><input type="radio" name="audit-mode" value="premium"> Premium</label>
-        </fieldset>
-      </article>
-
-      <!-- Insider Risk Management -->
-      <article class="cap-card" data-e5-only>
-        <header class="cap-head">
-          <h3>Insider Risk Management</h3>
-          <div class="chip-display">Cost: <span id="chip-irm" class="cap-chip">$0.00</span>/mo</div>
-        </header>
-        <p class="cap-desc">Detect risky AI usage patterns. $25/10K activities (DSPU). E5-only for Premium tier. Activity volume estimated as 10% of non-M365 messages.</p>
-        <fieldset class="mode-field">
-          <legend>Mode</legend>
-          <label><input type="radio" name="irm-mode" value="off" checked> Off</label>
-          <label><input type="radio" name="irm-mode" value="standard"> Standard</label>
-          <label><input type="radio" name="irm-mode" value="premium"> Premium (E5)</label>
-        </fieldset>
-      </article>
-
-      <!-- Data Security Investigations -->
-      <article class="cap-card" data-e5-only>
-        <header class="cap-head">
-          <h3>Data Security Investigations</h3>
-          <div class="chip-display">Cost: <span id="chip-dsi" class="cap-chip">$0.00</span>/mo</div>
-        </header>
-        <p class="cap-desc">$0.16/GB-day storage + $5.00/compute-hour. E5-only. Use only for active investigations.</p>
-        <fieldset class="mode-field">
-          <legend>Mode</legend>
-          <label><input type="radio" name="dsi-mode" value="off" checked> Off</label>
-          <label><input type="radio" name="dsi-mode" value="on"> On</label>
-        </fieldset>
-        <label class="num-field">
-          <span>Storage (GB)</span>
-          <input type="number" id="dsi-gb" value="100" min="0" step="10">
-        </label>
-        <label class="num-field">
-          <span>Compute hours / mo</span>
-          <input type="number" id="dsi-units" value="20" min="0" step="1">
-        </label>
-      </article>
-
-      <!-- eDiscovery Premium -->
-      <article class="cap-card" data-e5-only>
-        <header class="cap-head">
-          <h3>eDiscovery Premium</h3>
-          <div class="chip-display">Cost: <span id="chip-ed" class="cap-chip">$0.00</span>/mo</div>
-        </header>
-        <p class="cap-desc">$0.67/GB-day for AI content under hold. E5-only. Estimate based on prompts/responses subject to legal hold.</p>
-        <fieldset class="mode-field">
-          <legend>Mode</legend>
-          <label><input type="radio" name="ed-mode" value="off" checked> Off</label>
-          <label><input type="radio" name="ed-mode" value="on"> On</label>
-        </fieldset>
-        <label class="num-field">
-          <span>Storage under hold (GB)</span>
-          <input type="number" id="ed-gb" value="50" min="0" step="10">
-        </label>
-      </article>
-
-    </div>
-  </section>
-
-  <!-- Methodology table -->
-  <section class="step methodology">
-    <div class="step-head">
-      <span class="step-num">&#8505;</span>
-      <h2>Rates &amp; methodology</h2>
-      <p class="step-desc">Validated against Azure retail prices (prices.azure.com) and Microsoft Learn docs.</p>
-    </div>
-    <table class="rates-table">
-      <thead>
-        <tr><th>Capability</th><th>Meter</th><th>Rate</th><th>Notes</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Communication Compliance Standard</td><td>Text records</td><td>$0.30 / 1K</td><td>1 msg &asymp; 1 text record</td></tr>
-        <tr><td>Communication Compliance Premium</td><td>Text records</td><td>$0.50 / 1K</td><td>Adds advanced classifiers, Copilot summaries</td></tr>
-        <tr><td>Data Lifecycle Mgmt Premium</td><td>&mdash;</td><td>$0.00 (preview)</td><td>GA pricing TBD</td></tr>
-        <tr><td>Audit Standard</td><td>&mdash;</td><td>Included with E3/E5</td><td>Free</td></tr>
-        <tr><td>Audit Premium add-on</td><td>Audit records</td><td>$0.01 / 1K</td><td>Non-M365 AI workloads only; M365 Copilot is free</td></tr>
-        <tr><td>Insider Risk Mgmt</td><td>DSPU activities</td><td>$25.00 / 10K</td><td>~10% of non-M365 msgs trigger IRM signal</td></tr>
-        <tr><td>Data Security Investigations</td><td>GB-day + compute-hr</td><td>$0.16/GB-day + $5/hr</td><td>E5-only</td></tr>
-        <tr><td>eDiscovery Premium</td><td>GB-day</td><td>$0.67 / GB-day</td><td>E5-only</td></tr>
-      </tbody>
-    </table>
-    <p class="caveat">All prices in USD. M365 Copilot interactions are <strong>free</strong> for Audit, IRM, DSI, and eDiscovery; non-M365 Microsoft Copilots (Security, Fabric, Studio) only incur PAYG for Communication Compliance and DLM. Persona defaults: light = 5 msgs/user/day, typical = 20, heavy = 60. 22 working days/month.</p>
-  </section>
-
-</main>
-
-<!-- Sticky total -->
-<div class="sticky-total">
-  <div class="sticky-inner">
-    <div class="total-block">
-      <span class="total-label">Estimated PAYG cost</span>
-      <span id="total-payg" class="total-amount">$0.00/mo</span>
-    </div>
-    <div class="chips-row">
-      <span class="chip-line">CC: <span id="chip-cc-mirror">&mdash;</span></span>
-      <span class="chip-line">DLM: <span id="chip-dlm-mirror">&mdash;</span></span>
-      <span class="chip-line">Audit: <span id="chip-audit-mirror">&mdash;</span></span>
-      <span class="chip-line">IRM: <span id="chip-irm-mirror">&mdash;</span></span>
-      <span class="chip-line">DSI: <span id="chip-dsi-mirror">&mdash;</span></span>
-      <span class="chip-line">eDisc: <span id="chip-ed-mirror">&mdash;</span></span>
-    </div>
-    <button id="reveal-btn" type="button" class="reveal-btn">Show derivations</button>
-  </div>
-  <div id="deriv-drawer" class="deriv-drawer">
-    <ul id="deriv-list"></ul>
-  </div>
-</div>
-
-<script src="app.js?v=7164871"></script>
+  <script src="app.js?v=v3rewrite-1"></script>
 </body>
 </html>

@@ -1,312 +1,295 @@
-// Purview AI PAYG Calculator - Customer-Empathy Edition
-// Rates validated against Azure retail prices (prices.azure.com) Nov 2025.
-// Per-customer note: 1 message ~= 1 text record (simplification).
+// Purview AI PAYG Cost Calculator — v3 reference-aligned, per-workload policies
+'use strict';
 
-const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
-const fmt = n => '$' + (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtInt = n => Math.round(n).toLocaleString('en-US');
-
-// All rates from Azure retail prices API (prices.azure.com), Microsoft Purview meters.
+// ===== Reference-site rates =====
 const RATES = {
-  ccStandardPerKRecord: 0.30,    // Communication Compliance Standard: $0.30 / 1K text records
-  ccPremiumPerKRecord: 0.50,     // Communication Compliance Premium:  $0.50 / 1K text records
-  msgToTextRecords: 1.0,         // 1 message = 1 text record (per customer guidance)
-  dlmPerMmsg: 0.00,              // Data Lifecycle Mgmt Premium: $0 in preview pricing
-  auditPerMrec: 10.00,           // Audit Premium add-on: $0.01 / 1K records = $10 / 1M records
-  msgToAuditRecords: 1.0,        // 1 message generates ~1 audit record
-  dsiGBperMo: 4.80,              // DSI storage: $0.16 / GB-day = $4.80 / GB-mo
-  dsiComputeHr: 5.00,            // DSI compute: $5.00 / hour
-  edGBperMo: 20.10,              // eDiscovery Premium: $0.67 / GB-day = $20.10 / GB-mo
-  irmPerMactivities: 2500.00,    // IRM (DSPU): $25 / 10K activities = $2,500 / 1M activities
-  irmPremiumMultiplier: 2.0,     // Premium IRM tier ~2x activities/cost
+  cc:           { unit: 1_000,     price: 0.50,  label: '$0.50 / 1K text records' },
+  dlm:          { unit: 1_000_000, price: 6.00,  label: '$6.00 / 1M messages' },
+  irm:          { unit: 10_000,    price: 25.00, label: '$25.00 / 10K activities' },
+  auditZ3:      { unit: 1_000_000, price: 15.00, label: '$15.00 / 1M records' },
+  collection:   { unit: 10_000,    price: 0.50,  label: '$0.50 / 10K requests' },
+  dsiGB:        { price: 5.00,  label: '$5.00 / GB-month' },
+  dsiCompute:   { price: 5.00,  label: '$5.00 / Compute Unit' },
+  edGB:         { price: 20.00, label: '$20.00 / GB-month' },
 };
 
-// Persona -> messages/user/working-day
-const PERSONA_MSGS_PER_DAY = { light: 5, typical: 20, heavy: 60 };
-const WORKING_DAYS_PER_MONTH = 22;
-
-// Compliance posture presets - bulk-set capability mode radios
-const POSTURES = {
-  'audit-only':    { cc: 'off',     dlm: 'off',     audit: 'standard', irm: 'off',      dsi: 'off', ed: 'off', samplingPct: 0,   retentionYrs: 1 },
-  'standard':      { cc: 'premium', dlm: 'premium', audit: 'standard', irm: 'off',      dsi: 'off', ed: 'off', samplingPct: 20,  retentionYrs: 3 },
-  'comprehensive': { cc: 'premium', dlm: 'premium', audit: 'premium',  irm: 'premium',  dsi: 'on',  ed: 'on',  samplingPct: 100, retentionYrs: 5 },
+// Per-policy multipliers: how msgs/mo translate to billable units
+const MULTIPLIERS = {
+  cc:         1.0,   // 1 msg = 1 text record
+  dlm:        1.0,   // 1 msg = 1 message
+  irm:        0.10,  // ~10% of msgs trigger an IRM activity
+  auditZ3:    1.5,   // each 3rd party msg = 1.5 audit records
+  collection: 2.5,   // each 3rd party msg = 2.5 collection requests
 };
 
-const DERIVATIONS = [];
-function pushDeriv(label, expr, value) {
-  DERIVATIONS.push({ label, expr, value });
+// Volume model: msgs/user/day × working days
+const INTENSITY = { light: 5, typical: 20, heavy: 60 };
+const WORKING_DAYS = 22;
+
+// Workload definitions
+const WORKLOADS = [
+  { id: 'msCopilot',    label: 'Microsoft Copilot' },
+  { id: 'customAgents', label: 'Custom Agents' },
+  { id: 'thirdParty',   label: '3rd Party AI' },
+];
+
+// Which optional policies are user-toggleable per workload
+// (Audit/Collection/EndpointDLP/CopilotStudio are forced/disabled in markup)
+const WL_OPTIONAL_POLICIES = {
+  msCopilot:    ['cc', 'dlm', 'irm'],
+  customAgents: ['cc', 'dlm', 'irm'],
+  thirdParty:   ['cc', 'dlm', 'irm'],
+};
+
+// ===== Utilities =====
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+function fmtMoney(n) {
+  if (!isFinite(n)) n = 0;
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtNum(n) {
+  if (!isFinite(n)) n = 0;
+  return Math.round(n).toLocaleString('en-US');
 }
 
-function readModeRadio(name, fallback = 'off') {
-  const el = document.querySelector(`input[name="${name}"]:checked`);
-  return el ? el.value : fallback;
-}
+// ===== Read state from DOM =====
+function readWorkload(wlId) {
+  const card = document.querySelector(`.wl-card[data-wl="${wlId}"]`);
+  if (!card) return null;
+  const included = $('.wl-toggle', card)?.checked || false;
+  const users = parseInt($('.wl-users', card)?.value, 10) || 0;
+  const intensity = $(`input[name="int-${wlId}"]:checked`, card)?.value || 'typical';
+  const msgsPerDay = INTENSITY[intensity] || INTENSITY.typical;
+  const msgsPerMonth = users * msgsPerDay * WORKING_DAYS;
 
-function getPosture() {
-  const el = document.querySelector('.posture-chip.active');
-  return el ? el.dataset.posture : 'standard';
-}
-
-// Read each workload zone's monthly message volume from hidden inputs.
-function readZones() {
-  return {
-    z1b: parseInt($('#z1b-msgs').value || '0', 10),
-    z2:  parseInt($('#z2-msgs').value  || '0', 10),
-    z3:  parseInt($('#z3-msgs').value  || '0', 10),
-  };
-}
-
-// Sum of zones currently in scope of a capability via its scope checkboxes.
-function inScopeMsgs(scopeName, vol) {
-  const zones = $$(`input[name="${scopeName}"]:checked`).map(el => el.value);
-  return zones.reduce((sum, z) => sum + (vol[z] || 0), 0);
-}
-
-function ccCost(vol) {
-  const mode = readModeRadio('cc-mode', 'off');
-  if (mode === 'off') return 0;
-  const samplingPct = parseInt($('#cc-sampling').value || '20', 10);
-  const msgs = inScopeMsgs('cc-scope', vol);
-  const sampledMsgs = msgs * (samplingPct / 100);
-  const records = sampledMsgs * RATES.msgToTextRecords;
-  const ratePerK = (mode === 'premium') ? RATES.ccPremiumPerKRecord : RATES.ccStandardPerKRecord;
-  const cost = (records / 1000) * ratePerK;
-  pushDeriv(
-    'Communication Compliance ' + (mode === 'premium' ? 'Premium' : 'Standard'),
-    `${fmtInt(msgs)} msgs/mo &times; ${samplingPct}% sample &times; ${RATES.msgToTextRecords} record/msg @ ${fmt(ratePerK)}/1K records`,
-    cost
-  );
-  return cost;
-}
-
-function dlmCost(vol) {
-  const mode = readModeRadio('dlm-mode', 'off');
-  if (mode === 'off' || mode === 'basic') return 0;
-  const retentionYrs = parseInt($('#dlm-retention').value || '3', 10);
-  const msgs = inScopeMsgs('dlm-scope', vol);
-  const msgYears = msgs * 12 * retentionYrs / 1_000_000;
-  const cost = msgYears * RATES.dlmPerMmsg;
-  pushDeriv(
-    'Data Lifecycle Mgmt Premium',
-    `${fmtInt(msgs)} msgs/mo retained ${retentionYrs}yr &rArr; ${msgYears.toFixed(2)} M msg-yrs @ ${fmt(RATES.dlmPerMmsg)}/M (preview = free)`,
-    cost
-  );
-  return cost;
-}
-
-function auditCost(vol) {
-  const mode = readModeRadio('audit-mode', 'standard');
-  if (mode === 'off' || mode === 'standard') return 0;
-  // Audit Premium add-on charges only for non-M365 AI workloads (z2, z3 - not z1b).
-  const msgs = (vol.z2 || 0) + (vol.z3 || 0);
-  const records = msgs * RATES.msgToAuditRecords;
-  const cost = (records / 1_000_000) * RATES.auditPerMrec;
-  pushDeriv(
-    'Audit Premium',
-    `${fmtInt(msgs)} non-MS-Copilot msgs/mo &times; ${RATES.msgToAuditRecords} audit rec/msg @ ${fmt(RATES.auditPerMrec)}/M records`,
-    cost
-  );
-  return cost;
-}
-
-function irmCost(vol) {
-  const mode = readModeRadio('irm-mode', 'off');
-  if (mode === 'off') return 0;
-  // IRM activities derived from non-MS-Copilot AI workload volume; assume ~10% of msgs trigger IRM signal.
-  const msgs = (vol.z2 || 0) + (vol.z3 || 0);
-  const activities = msgs * 0.10 * (mode === 'premium' ? RATES.irmPremiumMultiplier : 1);
-  const cost = (activities / 1_000_000) * RATES.irmPerMactivities;
-  pushDeriv(
-    'Insider Risk Management ' + (mode === 'premium' ? 'Premium' : 'Standard'),
-    `${fmtInt(msgs)} non-MS-Copilot msgs &times; 10% trigger${mode === 'premium' ? ' &times; 2x premium' : ''} = ${fmtInt(activities)} activities @ ${fmt(RATES.irmPerMactivities)}/M`,
-    cost
-  );
-  return cost;
-}
-
-function dsiCost() {
-  const mode = readModeRadio('dsi-mode', 'off');
-  if (mode === 'off') return 0;
-  const gb = parseInt($('#dsi-gb').value || '0', 10);
-  const units = parseInt($('#dsi-units').value || '0', 10);
-  const storageCost = gb * RATES.dsiGBperMo;
-  const computeCost = units * RATES.dsiComputeHr;
-  const cost = storageCost + computeCost;
-  pushDeriv(
-    'Data Security Investigations',
-    `${fmtInt(gb)} GB &times; ${fmt(RATES.dsiGBperMo)}/GB-mo + ${fmtInt(units)} compute-hr &times; ${fmt(RATES.dsiComputeHr)}/hr`,
-    cost
-  );
-  return cost;
-}
-
-function edCost() {
-  const mode = readModeRadio('ed-mode', 'off');
-  if (mode === 'off') return 0;
-  const gb = parseInt($('#ed-gb').value || '0', 10);
-  const cost = gb * RATES.edGBperMo;
-  pushDeriv(
-    'eDiscovery Premium',
-    `${fmtInt(gb)} GB &times; ${fmt(RATES.edGBperMo)}/GB-mo`,
-    cost
-  );
-  return cost;
-}
-
-function enforceLicense() {
-  const lic = $('#license').value || 'e5';
-  const isE3 = lic === 'e3';
-  $$('[data-e5-only]').forEach(el => {
-    if (isE3) {
-      el.classList.add('disabled');
-      el.querySelectorAll('input, select, button').forEach(i => i.disabled = true);
-      // Force E5-only caps off
-      const offRadio = el.querySelector('input[type="radio"][value="off"]');
-      if (offRadio && !offRadio.checked) offRadio.checked = true;
-    } else {
-      el.classList.remove('disabled');
-      el.querySelectorAll('input, select, button').forEach(i => i.disabled = false);
-    }
+  // Read enabled policies (incl. forced-checked ones for cost calc)
+  const policies = {};
+  $$('.wl-policies input[type="checkbox"]', card).forEach(cb => {
+    policies[cb.dataset.pol] = cb.checked;
   });
-  // Disable IRM Premium on E3
-  const irmPrem = document.querySelector('input[name="irm-mode"][value="premium"]');
-  if (irmPrem) irmPrem.disabled = isE3;
+
+  return { id: wlId, included, users, intensity, msgsPerMonth, policies };
 }
 
-function applyPostureToCaps(posture) {
-  const p = POSTURES[posture];
-  if (!p) return;
-  const setRadio = (name, val) => {
-    const r = document.querySelector(`input[name="${name}"][value="${val}"]`);
-    if (r && !r.disabled) r.checked = true;
+function readDsi() {
+  return {
+    included: $('.tn-toggle[data-tn="dsi"]')?.checked || false,
+    gb: parseFloat($('#dsi-gb')?.value) || 0,
+    units: parseFloat($('#dsi-units')?.value) || 0,
   };
-  setRadio('cc-mode',    p.cc);
-  setRadio('dlm-mode',   p.dlm);
-  setRadio('audit-mode', p.audit);
-  setRadio('irm-mode',   p.irm);
-  setRadio('dsi-mode',   p.dsi);
-  setRadio('ed-mode',    p.ed);
-  if ($('#cc-sampling'))  $('#cc-sampling').value  = p.samplingPct;
-  if ($('#dlm-retention')) $('#dlm-retention').value = p.retentionYrs;
+}
+function readEdisc() {
+  return {
+    included: $('.tn-toggle[data-tn="edisc"]')?.checked || false,
+    gb: parseFloat($('#edisc-gb')?.value) || 0,
+  };
 }
 
-function recomputeWorkloadVolume(zone) {
-  const card = document.querySelector(`[data-zone-card="${zone}"]`);
-  if (!card) return;
-  const toggle = card.querySelector('input[type="checkbox"][data-include]');
-  const usersInput = card.querySelector(`input[data-users="${zone}"]`);
-  const personaRadio = card.querySelector(`input[name="persona-${zone}"]:checked`);
-  const hidden = $('#' + zone + '-msgs');
-  if (!hidden) return;
-  if (toggle && !toggle.checked) {
-    hidden.value = '0';
-    card.classList.add('zone-off');
+// ===== Cost computations =====
+function policyCost(rateKey, msgs) {
+  const rate = RATES[rateKey];
+  const mult = MULTIPLIERS[rateKey] ?? 1.0;
+  if (!rate || msgs <= 0) return 0;
+  const billableUnits = msgs * mult;
+  return (billableUnits / rate.unit) * rate.price;
+}
+
+function computeWorkloadCost(wl) {
+  if (!wl.included || wl.msgsPerMonth <= 0) {
+    return { subtotal: 0, lineItems: [] };
+  }
+  const items = [];
+  let subtotal = 0;
+  const m = wl.msgsPerMonth;
+
+  // Audit (3rd party only is paid)
+  if (wl.id === 'thirdParty' && wl.policies.audit) {
+    const cost = policyCost('auditZ3', m);
+    items.push({ cap: 'Audit (required)', vol: `${fmtNum(m * 1.5)} records`, rate: RATES.auditZ3.label, cost });
+    subtotal += cost;
+  } else if (wl.policies.audit) {
+    items.push({ cap: 'Audit', vol: '—', rate: 'Included $0', cost: 0 });
+  }
+
+  // Copilot Studio audit (custom agents only — informational)
+  if (wl.id === 'customAgents' && wl.policies.copilotStudio) {
+    items.push({ cap: 'Copilot Studio Audit', vol: '—', rate: 'Included $0', cost: 0 });
+  }
+
+  // Collection Policies (3rd party only)
+  if (wl.id === 'thirdParty' && wl.policies.collection) {
+    const cost = policyCost('collection', m);
+    items.push({ cap: 'Collection Policies (required)', vol: `${fmtNum(m * 2.5)} requests`, rate: RATES.collection.label, cost });
+    subtotal += cost;
+  }
+
+  // Endpoint DLP (3rd party only — informational)
+  if (wl.id === 'thirdParty' && wl.policies.endpointDlp) {
+    items.push({ cap: 'Endpoint DLP', vol: '—', rate: '$0 with E5', cost: 0 });
+  }
+
+  // Communication Compliance
+  if (wl.policies.cc) {
+    const cost = policyCost('cc', m);
+    items.push({ cap: 'Communication Compliance', vol: `${fmtNum(m)} text records`, rate: RATES.cc.label, cost });
+    subtotal += cost;
+  }
+
+  // Data Lifecycle Management
+  if (wl.policies.dlm) {
+    const cost = policyCost('dlm', m);
+    items.push({ cap: 'Data Lifecycle Mgmt', vol: `${fmtNum(m)} messages`, rate: RATES.dlm.label, cost });
+    subtotal += cost;
+  }
+
+  // Insider Risk Management
+  if (wl.policies.irm) {
+    const cost = policyCost('irm', m);
+    items.push({ cap: 'Insider Risk Mgmt', vol: `${fmtNum(m * MULTIPLIERS.irm)} activities`, rate: RATES.irm.label, cost });
+    subtotal += cost;
+  }
+
+  return { subtotal, lineItems: items };
+}
+
+function computeDsiCost(dsi) {
+  if (!dsi.included) return { subtotal: 0, lineItems: [] };
+  const storage = dsi.gb * RATES.dsiGB.price;
+  const compute = dsi.units * RATES.dsiCompute.price;
+  const items = [];
+  if (dsi.gb > 0) items.push({ cap: 'DSI Storage', vol: `${fmtNum(dsi.gb)} GB`, rate: RATES.dsiGB.label, cost: storage });
+  if (dsi.units > 0) items.push({ cap: 'DSI AI Compute', vol: `${fmtNum(dsi.units)} units`, rate: RATES.dsiCompute.label, cost: compute });
+  return { subtotal: storage + compute, lineItems: items };
+}
+
+function computeEdiscCost(ed) {
+  if (!ed.included) return { subtotal: 0, lineItems: [] };
+  const cost = ed.gb * RATES.edGB.price;
+  const items = [];
+  if (ed.gb > 0) items.push({ cap: 'eDiscovery Premium', vol: `${fmtNum(ed.gb)} GB review-set`, rate: RATES.edGB.label, cost });
+  return { subtotal: cost, lineItems: items };
+}
+
+// ===== Render =====
+function renderWorkloadCard(wl, result) {
+  // msgs display
+  const msgsEl = document.querySelector(`.wl-msgs[data-wl="${wl.id}"]`);
+  if (msgsEl) msgsEl.textContent = fmtNum(wl.msgsPerMonth);
+
+  // subtotal pill
+  const subEl = document.getElementById(`sub-${wl.id}`);
+  if (subEl) subEl.textContent = `${fmtMoney(result.subtotal)} /mo`;
+
+  // dim card if not included
+  const card = document.querySelector(`.wl-card[data-wl="${wl.id}"]`);
+  if (card) card.classList.toggle('wl-card--off', !wl.included);
+}
+
+function renderTenantCard(tn, result, subElId) {
+  const subEl = document.getElementById(subElId);
+  if (subEl) subEl.textContent = `${fmtMoney(result.subtotal)} /mo`;
+  const card = document.querySelector(`.tenant-card[data-tn="${tn}"]`);
+  if (card) card.classList.toggle('wl-card--off', result.subtotal === 0 && !document.querySelector(`.tn-toggle[data-tn="${tn}"]`)?.checked);
+}
+
+function renderLedger(rows) {
+  const body = $('#ledger-body');
+  if (!body) return;
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="5" class="ledger-empty">Enable a workload &amp; policy above to see derivations.</td></tr>';
     return;
   }
-  card.classList.remove('zone-off');
-  const users = Math.max(0, parseInt((usersInput && usersInput.value) || '0', 10));
-  const persona = (personaRadio && personaRadio.value) || 'typical';
-  const perDay = PERSONA_MSGS_PER_DAY[persona] || PERSONA_MSGS_PER_DAY.typical;
-  const monthly = users * perDay * WORKING_DAYS_PER_MONTH;
-  hidden.value = monthly;
-  const out = card.querySelector(`[data-derived="${zone}"]`);
-  if (out) out.textContent = fmtInt(monthly) + ' msgs/mo';
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.workload}</td>
+      <td>${r.cap}</td>
+      <td>${r.vol}</td>
+      <td>${r.rate}</td>
+      <td class="num">${fmtMoney(r.cost)}</td>
+    </tr>
+  `).join('');
 }
 
-function recomputeAllZones() {
-  ['z1b', 'z2', 'z3'].forEach(recomputeWorkloadVolume);
+function renderHeader(workloadTotal, dsiTotal, ediscTotal) {
+  const paygTotal = workloadTotal + dsiTotal;
+  const allIn = paygTotal + ediscTotal;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('header-total', '');
+  const totalEl = $('#header-total');
+  if (totalEl) totalEl.innerHTML = fmtMoney(paygTotal) + '<span class="hdr-mo">/mo</span>';
+  set('header-workloads', fmtMoney(workloadTotal));
+  set('header-dsi', fmtMoney(dsiTotal));
+  set('header-edisc', fmtMoney(ediscTotal));
+  set('header-allin', fmtMoney(allIn) + '/mo');
 }
 
+// ===== Main recompute =====
 function recompute() {
-  enforceLicense();
-  recomputeAllZones();
-  DERIVATIONS.length = 0;
-  const vol = readZones();
-  const cc = ccCost(vol);
-  const dlm = dlmCost(vol);
-  const audit = auditCost(vol);
-  const irm = irmCost(vol);
-  const dsi = dsiCost();
-  const ed = edCost();
-  const total = cc + dlm + audit + irm + dsi + ed;
-  $('#total-payg').textContent = fmt(total) + '/mo';
-  // Per-cap chips: update both the cap-card chip and the sticky-total mirror
-  const setChip = (key, val) => {
-    const card = $('#chip-' + key);
-    if (card) card.textContent = fmt(val);
-    const mirror = $('#chip-' + key + '-mirror');
-    if (mirror) mirror.textContent = fmt(val) + '/mo';
-  };
-  setChip('cc', cc);
-  setChip('dlm', dlm);
-  setChip('audit', audit);
-  setChip('irm', irm);
-  setChip('dsi', dsi);
-  setChip('ed', ed);
-  // Re-render derivations drawer
-  const list = $('#deriv-list');
-  if (list) {
-    list.innerHTML = '';
-    DERIVATIONS.forEach(d => {
-      const li = document.createElement('li');
-      li.innerHTML = `<strong>${d.label}</strong>: ${d.expr} = <span class="deriv-val">${fmt(d.value)}/mo</span>`;
-      list.appendChild(li);
-    });
-    if (!DERIVATIONS.length) {
-      list.innerHTML = '<li class="muted">No PAYG capabilities active. Pick a posture or enable a capability.</li>';
+  const ledgerRows = [];
+  let workloadTotal = 0;
+
+  WORKLOADS.forEach(({ id, label }) => {
+    const wl = readWorkload(id);
+    if (!wl) return;
+    const res = computeWorkloadCost(wl);
+    renderWorkloadCard(wl, res);
+    if (wl.included) {
+      workloadTotal += res.subtotal;
+      res.lineItems.forEach(li => ledgerRows.push({ workload: label, ...li }));
     }
-  }
+  });
+
+  const dsi = readDsi();
+  const dsiRes = computeDsiCost(dsi);
+  renderTenantCard('dsi', dsiRes, 'sub-dsi');
+  if (dsi.included) dsiRes.lineItems.forEach(li => ledgerRows.push({ workload: 'Tenant-wide', ...li }));
+
+  const ed = readEdisc();
+  const edRes = computeEdiscCost(ed);
+  renderTenantCard('edisc', edRes, 'sub-edisc');
+  if (ed.included) edRes.lineItems.forEach(li => ledgerRows.push({ workload: 'Tenant-wide (separate)', ...li }));
+
+  renderHeader(workloadTotal, dsiRes.subtotal, edRes.subtotal);
+  renderLedger(ledgerRows);
 }
 
-function wirePostureChips() {
-  $$('.posture-chip').forEach(chip => {
-    chip.addEventListener('click', e => {
-      e.preventDefault();
-      $$('.posture-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      applyPostureToCaps(chip.dataset.posture);
-      recompute();
-    });
+// ===== Reset =====
+function resetAll() {
+  // Workload toggles: only msCopilot ON
+  $$('.wl-toggle').forEach(cb => { cb.checked = (cb.dataset.wl === 'msCopilot'); });
+  // Users
+  document.querySelector('.wl-users[data-wl="msCopilot"]').value = 1000;
+  document.querySelector('.wl-users[data-wl="customAgents"]').value = 0;
+  document.querySelector('.wl-users[data-wl="thirdParty"]').value = 0;
+  // Intensity = typical
+  ['msCopilot','customAgents','thirdParty'].forEach(wl => {
+    const r = document.querySelector(`input[name="int-${wl}"][value="typical"]`);
+    if (r) r.checked = true;
   });
-}
-
-function wireWorkloadCards() {
-  $$('[data-zone-card]').forEach(card => {
-    const zone = card.dataset.zoneCard;
-    card.querySelectorAll('input[type="checkbox"][data-include]').forEach(t => t.addEventListener('change', () => { recomputeWorkloadVolume(zone); recompute(); }));
-    card.querySelectorAll(`input[data-users="${zone}"]`).forEach(i => i.addEventListener('input', () => { recomputeWorkloadVolume(zone); recompute(); }));
-    card.querySelectorAll(`input[name="persona-${zone}"]`).forEach(r => r.addEventListener('change', () => { recomputeWorkloadVolume(zone); recompute(); }));
-  });
-}
-
-function wireGenerics() {
-  // Cap-mode radios + license + sampling + retention + cap inputs all trigger recompute
-  $$('input[type="radio"], input[type="checkbox"], select, input[type="number"]').forEach(el => {
-    if (el.dataset.include) return; // already wired in card handler
-    if (el.dataset.users) return;
-    if (el.name && el.name.startsWith('persona-')) return;
-    el.addEventListener('change', recompute);
-    if (el.type === 'number') el.addEventListener('input', recompute);
-  });
-  const reveal = $('#reveal-btn');
-  if (reveal) reveal.addEventListener('click', () => {
-    const drawer = $('#deriv-drawer');
-    drawer.classList.toggle('open');
-    reveal.textContent = drawer.classList.contains('open') ? 'Hide derivations' : 'Show derivations';
-  });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  wirePostureChips();
-  wireWorkloadCards();
-  wireGenerics();
-  // Default posture: Standard
-  const def = document.querySelector('.posture-chip[data-posture="standard"]');
-  if (def) {
-    $$('.posture-chip').forEach(c => c.classList.remove('active'));
-    def.classList.add('active');
-    applyPostureToCaps('standard');
-  }
+  // Optional policies all off
+  $$('.wl-policies input[type="checkbox"]:not([disabled])').forEach(cb => { cb.checked = false; });
+  // Tenant
+  $$('.tn-toggle').forEach(cb => { cb.checked = false; });
+  $('#dsi-gb').value = 0;
+  $('#dsi-units').value = 0;
+  $('#edisc-gb').value = 0;
+  // License
+  document.querySelector('input[name="license"][value="E5"]').checked = true;
   recompute();
-});
+}
+
+// ===== Wire up =====
+function init() {
+  document.addEventListener('input', recompute);
+  document.addEventListener('change', recompute);
+  $('#reset-btn')?.addEventListener('click', resetAll);
+  recompute();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
