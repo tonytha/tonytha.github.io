@@ -1431,8 +1431,10 @@ main {
 }
 .wl-policies legend { padding: 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #475569; }
 .pol {
-  display: grid; grid-template-columns: auto 1fr auto; align-items: center;
-  gap: 8px; padding: 5px 6px; border-radius: 5px; cursor: pointer;
+  display: grid; grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 4px 8px; padding: 6px 6px; border-radius: 5px; cursor: pointer;
   font-size: 13px;
 }
 .pol:hover { background: #f8fafc; }
@@ -1444,6 +1446,25 @@ main {
 .pol-required .pol-name { color: #b45309; font-weight: 600; }
 .pol-required { background: #fffbeb; }
 .pol-required:hover { background: #fef3c7; }
+
+/* --- Per-policy controls (informational pills) --- */
+.pol-controls {
+  grid-column: 1 / -1;
+  margin: 2px 0 0 23px;
+  padding: 0;
+  display: flex; flex-wrap: wrap; gap: 4px 6px;
+  list-style: none;
+}
+.pol-controls li {
+  font-size: 10.5px; font-weight: 500;
+  color: #475569; background: #f1f5f9;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 1px 8px;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.pol-required .pol-controls li { background: #fef9c3; border-color: #fde68a; color: #78350f; }
+.pol-included .pol-controls li { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
 
 /* --- Workload footer subtotal --- */
 .wl-foot {

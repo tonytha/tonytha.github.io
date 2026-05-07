@@ -17,16 +17,6 @@
           Pick users &amp; intensity per workload, then enable the policies you need.
         </p>
         <div class="hero-controls">
-          <div class="license-toggle" role="radiogroup" aria-label="License level">
-            <label class="lic">
-              <input type="radio" name="license" value="E5" checked>
-              <span>Microsoft 365 E5</span>
-            </label>
-            <label class="lic">
-              <input type="radio" name="license" value="E3">
-              <span>E3 / Other</span>
-            </label>
-          </div>
           <button id="reset-btn" class="btn-secondary" type="button">Reset</button>
         </div>
         <p class="hero-note">
@@ -91,23 +81,46 @@
             <legend>Policies for this workload</legend>
             <label class="pol pol-included">
               <input type="checkbox" data-pol="audit" checked disabled>
-              <span class="pol-name">Audit</span>
+              <span class="pol-name">Audit (Standard)</span>
               <span class="pol-meta tag-green">Included &mdash; $0</span>
+              <ul class="pol-controls">
+                <li>Audit log search</li>
+                <li>High-bandwidth audit</li>
+                <li>1-year retention</li>
+              </ul>
             </label>
             <label class="pol">
               <input type="checkbox" data-pol="cc">
               <span class="pol-name">Communication Compliance</span>
               <span class="pol-meta">$0.50 / 1K text records</span>
+              <ul class="pol-controls">
+                <li>Offensive language &amp; harassment</li>
+                <li>Sensitive info detection (SITs)</li>
+                <li>Trainable classifiers</li>
+                <li>OCR / image scanning</li>
+              </ul>
             </label>
             <label class="pol">
               <input type="checkbox" data-pol="dlm">
               <span class="pol-name">Data Lifecycle Management</span>
               <span class="pol-meta">$6.00 / 1M messages</span>
+              <ul class="pol-controls">
+                <li>Retention labels (manual &amp; auto)</li>
+                <li>Trainable classifiers</li>
+                <li>Adaptive policy scopes</li>
+                <li>Disposition review</li>
+              </ul>
             </label>
             <label class="pol">
               <input type="checkbox" data-pol="irm">
               <span class="pol-name">Insider Risk Management</span>
               <span class="pol-meta">$25.00 / 10K activities</span>
+              <ul class="pol-controls">
+                <li>Risky AI usage signals</li>
+                <li>Data theft (departing users)</li>
+                <li>Data leaks via AI tools</li>
+                <li>Priority-user policies</li>
+              </ul>
             </label>
           </fieldset>
 
@@ -150,28 +163,55 @@
             <legend>Policies for this workload</legend>
             <label class="pol pol-included">
               <input type="checkbox" data-pol="audit" checked disabled>
-              <span class="pol-name">Audit</span>
+              <span class="pol-name">Audit (Standard)</span>
               <span class="pol-meta tag-green">Included &mdash; $0</span>
+              <ul class="pol-controls">
+                <li>Audit log search</li>
+                <li>High-bandwidth audit</li>
+                <li>1-year retention</li>
+              </ul>
             </label>
             <label class="pol pol-included">
               <input type="checkbox" data-pol="copilotStudio" checked disabled>
               <span class="pol-name">Copilot Studio Audit</span>
               <span class="pol-meta tag-green">Included &mdash; $0</span>
+              <ul class="pol-controls">
+                <li>Custom-agent interaction logs</li>
+                <li>Action &amp; API telemetry</li>
+              </ul>
             </label>
             <label class="pol">
               <input type="checkbox" data-pol="cc">
               <span class="pol-name">Communication Compliance</span>
               <span class="pol-meta">$0.50 / 1K text records</span>
+              <ul class="pol-controls">
+                <li>Offensive language &amp; harassment</li>
+                <li>Sensitive info detection (SITs)</li>
+                <li>Trainable classifiers</li>
+                <li>OCR / image scanning</li>
+              </ul>
             </label>
             <label class="pol">
               <input type="checkbox" data-pol="dlm">
               <span class="pol-name">Data Lifecycle Management</span>
               <span class="pol-meta">$6.00 / 1M messages</span>
+              <ul class="pol-controls">
+                <li>Retention labels (manual &amp; auto)</li>
+                <li>Trainable classifiers</li>
+                <li>Adaptive policy scopes</li>
+                <li>Disposition review</li>
+              </ul>
             </label>
             <label class="pol">
               <input type="checkbox" data-pol="irm">
               <span class="pol-name">Insider Risk Management</span>
               <span class="pol-meta">$25.00 / 10K activities</span>
+              <ul class="pol-controls">
+                <li>Risky AI usage signals</li>
+                <li>Data theft (departing users)</li>
+                <li>Data leaks via AI tools</li>
+                <li>Priority-user policies</li>
+              </ul>
             </label>
           </fieldset>
 
@@ -216,31 +256,65 @@
               <input type="checkbox" data-pol="audit" checked disabled>
               <span class="pol-name">Audit (required)</span>
               <span class="pol-meta">$15.00 / 1M records</span>
+              <ul class="pol-controls">
+                <li>3rd-party AI prompt &amp; response capture</li>
+                <li>High-bandwidth audit</li>
+                <li>Long-term retention (1&ndash;10 yr)</li>
+              </ul>
             </label>
             <label class="pol pol-required">
               <input type="checkbox" data-pol="collection" checked disabled>
-              <span class="pol-name">Collection Policies (required)</span>
+              <span class="pol-name">Collection Policies &mdash; In-Transit Protection (required)</span>
               <span class="pol-meta">$0.50 / 10K requests</span>
+              <ul class="pol-controls">
+                <li>Capture prompts &amp; responses from 3rd-party AI</li>
+                <li>In-line DLP on outbound prompts</li>
+                <li>Block sensitive prompts before send</li>
+                <li>User-scope targeting</li>
+              </ul>
             </label>
             <label class="pol pol-included">
               <input type="checkbox" data-pol="endpointDlp" checked disabled>
-              <span class="pol-name">Endpoint DLP</span>
-              <span class="pol-meta tag-green">$0 with E5</span>
+              <span class="pol-name">Endpoint DLP &mdash; Egress Blocking</span>
+              <span class="pol-meta tag-green">Included &mdash; $0</span>
+              <ul class="pol-controls">
+                <li>Block paste to AI apps</li>
+                <li>Block file upload to AI apps</li>
+                <li>Browser &amp; desktop egress controls</li>
+              </ul>
             </label>
             <label class="pol">
               <input type="checkbox" data-pol="cc">
               <span class="pol-name">Communication Compliance</span>
               <span class="pol-meta">$0.50 / 1K text records</span>
+              <ul class="pol-controls">
+                <li>Offensive language &amp; harassment</li>
+                <li>Sensitive info detection (SITs)</li>
+                <li>Trainable classifiers</li>
+                <li>OCR / image scanning</li>
+              </ul>
             </label>
             <label class="pol">
               <input type="checkbox" data-pol="dlm">
               <span class="pol-name">Data Lifecycle Management</span>
               <span class="pol-meta">$6.00 / 1M messages</span>
+              <ul class="pol-controls">
+                <li>Retention labels (manual &amp; auto)</li>
+                <li>Trainable classifiers</li>
+                <li>Adaptive policy scopes</li>
+                <li>Disposition review</li>
+              </ul>
             </label>
             <label class="pol">
               <input type="checkbox" data-pol="irm">
               <span class="pol-name">Insider Risk Management</span>
               <span class="pol-meta">$25.00 / 10K activities</span>
+              <ul class="pol-controls">
+                <li>Risky AI usage signals</li>
+                <li>Data theft (departing users)</li>
+                <li>Data leaks via AI tools</li>
+                <li>Priority-user policies</li>
+              </ul>
             </label>
           </fieldset>
 
@@ -373,7 +447,7 @@
             <tr><td>Communication Compliance</td><td>$0.50 / 1K text records</td><td>Reference site (Premium)</td></tr>
             <tr><td>Data Lifecycle Management</td><td>$6.00 / 1M messages</td><td>Reference site (Premium)</td></tr>
             <tr><td>Collection Policies</td><td>$0.50 / 10K requests</td><td>Reference site (Z3 required)</td></tr>
-            <tr><td>Endpoint DLP</td><td>$0 with E5</td><td>E5 entitlement</td></tr>
+            <tr><td>Endpoint DLP</td><td>Included &mdash; $0</td><td>Microsoft Purview docs</td></tr>
             <tr><td>Insider Risk Management</td><td>$25.00 / 10K activities</td><td>Azure retail (Standard DSPU)</td></tr>
             <tr><td>DSI Storage</td><td>$5.00 / GB-month</td><td>Reference site</td></tr>
             <tr><td>DSI AI Compute</td><td>$5.00 / Compute Unit</td><td>Reference site</td></tr>

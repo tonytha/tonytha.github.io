@@ -121,13 +121,13 @@ function computeWorkloadCost(wl) {
   // Collection Policies (3rd party only)
   if (wl.id === 'thirdParty' && wl.policies.collection) {
     const cost = policyCost('collection', m);
-    items.push({ cap: 'Collection Policies (required)', vol: `${fmtNum(m * 2.5)} requests`, rate: RATES.collection.label, cost });
+    items.push({ cap: 'Collection Policies — In-Transit Protection (required)', vol: `${fmtNum(m * 2.5)} requests`, rate: RATES.collection.label, cost });
     subtotal += cost;
   }
 
   // Endpoint DLP (3rd party only — informational)
   if (wl.id === 'thirdParty' && wl.policies.endpointDlp) {
-    items.push({ cap: 'Endpoint DLP', vol: '—', rate: '$0 with E5', cost: 0 });
+    items.push({ cap: 'Endpoint DLP', vol: '—', rate: 'Included — $0', cost: 0 });
   }
 
   // Communication Compliance
@@ -275,8 +275,6 @@ function resetAll() {
   $('#dsi-gb').value = 0;
   $('#dsi-units').value = 0;
   $('#edisc-gb').value = 0;
-  // License
-  document.querySelector('input[name="license"][value="E5"]').checked = true;
   recompute();
 }
 
